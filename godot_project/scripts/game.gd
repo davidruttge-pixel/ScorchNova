@@ -97,7 +97,7 @@ func _new_game() -> void:
 	for p in players:
 		p["last_ground"] = terrain.height_at(p["x"])
 	shot_count = 0
-	status = "Spieler 1 ist am Zug. Winkel und Kraft einstellen."
+	status = "ZEBRA EDITION: Spieler 1 ist am Zug. Winkel und Kraft einstellen."
 	_refresh_ui()
 	queue_redraw()
 
@@ -301,7 +301,7 @@ func _build_main_menu(root: Control) -> void:
 	heading.add_theme_font_size_override("font_size", 54)
 	column.add_child(heading)
 	var subtitle := Label.new()
-	subtitle.text = "ARTILLERIE  •  TAKTIK  •  ZERSTÖRUNG"
+	subtitle.text = "ZEBRA EDITION  •  ARTILLERIE  •  TAKTIK"
 	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	column.add_child(subtitle)
 	var play := Button.new()
