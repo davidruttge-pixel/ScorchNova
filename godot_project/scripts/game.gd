@@ -36,6 +36,10 @@ var ai_difficulty := 1
 var shot_direction := 1.0
 var bounce_count := 0
 var projectile_age := 0.0
+var visual_trail: Array[Vector2] = []
+var visual_clock := 0.0
+var visual_muzzle := Vector2.ZERO
+var visual_muzzle_time := 0.0
 var sparks: Array[Dictionary] = []
 var menu_open := true
 var income_per_turn := 35
@@ -486,6 +490,9 @@ func _fire() -> void:
 	velocity = Vector2(cos(angle) * speed * direction, -sin(angle) * speed)
 	projectile_weapon = weapon
 	projectile_age = 0.0
+	visual_trail.clear()
+	visual_muzzle = projectile
+	visual_muzzle_time = 0.18
 	bounce_count = 0
 	shot_owner = current
 	projectile_active = true
@@ -495,6 +502,8 @@ func _fire() -> void:
 	_refresh_ui()
 
 func _physics_process(delta: float) -> void:
+	visual_clock += delta
+	visual_muzzle_time = maxf(0.0, visual_muzzle_time - delta)
 	if menu_open:
 		return
 	for i in range(sparks.size() - 1, -1, -1):
@@ -509,6 +518,9 @@ func _physics_process(delta: float) -> void:
 		if effects[i]["time"] <= 0:
 			effects.remove_at(i)
 	if projectile_active:
+		visual_trail.append(projectile)
+		if visual_trail.size() > 22:
+			visual_trail.remove_at(0)
 		projectile_age += delta
 		var steps := 5
 		for step in range(steps):
@@ -794,9 +806,20 @@ func _draw() -> void:
 		_draw_trajectory()
 	for f in falling:
 		draw_circle(f["pos"], 4.0, Color("ffb34f"))
+	# Smooth fading trails and pulsating projectiles, without changing physics.
+	if visual_muzzle_time > 0.0:
+		var muzzle_alpha: float = visual_muzzle_time / 0.18
+		draw_circle(visual_muzzle, 22.0 * muzzle_alpha, Color(1.0, 0.82, 0.3, muzzle_alpha * 0.5))
+		draw_circle(visual_muzzle, 10.0 * muzzle_alpha, Color(1.0, 0.96, 0.75, muzzle_alpha))
 	if projectile_active:
-		draw_circle(projectile, 5.5, Color("ffde86"))
-		draw_arc(projectile, 8, 0, TAU, 12, Color("ff7a5b"), 2)
+		for j in range(visual_trail.size()):
+			var age: float = float(j + 1) / float(visual_trail.size() + 1)
+			var point: Vector2 = visual_trail[j]
+			draw_circle(point, 1.5 + 4.0 * age, Color(1.0, 0.47 + 0.35 * age, 0.18, 0.5 * age))
+		var pulse: float = 1.0 + 0.12 * sin(visual_clock * 20.0)
+		draw_circle(projectile, 12.0 * pulse, Color(1.0, 0.5, 0.12, 0.18))
+		draw_circle(projectile, 5.5 * pulse, Color("ffde86"))
+		draw_arc(projectile, 8.0 * pulse, 0.0, TAU, 18, Color("ff7a5b"), 2.0)
 	for spark in sparks:
 		draw_circle(spark["pos"], 2.8, spark["color"] * Color(1, 1, 1, clampf(float(spark["life"]) * 2.0, 0, 1)))
 	for effect in effects:
