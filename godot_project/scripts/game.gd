@@ -55,7 +55,6 @@ var touch_aim_enabled := true
 var touch_aim_dragging := false
 var touch_aim_index := -1
 var touch_aim_origin := Vector2.ZERO
-var touch_aim_enabled := true
 var touch_target := Vector2.ZERO
 var touch_target_timer := 0.0
 var ui_root: Control
