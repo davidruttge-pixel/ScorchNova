@@ -76,19 +76,20 @@ jobs:
       - name: Reimport with configured Android editor settings
         run: |
           ./Godot_v4.3-stable_linux.x86_64 --headless --verbose --path . --editor --quit
-      - name: Inspect effective Godot editor settings
+      - name: Inspect Android configuration without editor scripting
         run: |
-          cat > export_diagnostic.gd <<'EOF'
-          @tool
-          extends EditorScript
-
-          func _run() -> void:
-              var settings: EditorSettings = EditorInterface.get_editor_settings()
-              for key in ["export/android/android_sdk_path", "export/android/java_sdk_path", "export/android/debug_keystore", "export/android/debug_keystore_user"]:
-                  print("DIAGNOSTIC ", key, " exists=", settings.has_setting(key), " value=", settings.get_setting(key) if settings.has_setting(key) else "<missing>")
-          EOF
-          ./Godot_v4.3-stable_linux.x86_64 --headless --path . --editor --script export_diagnostic.gd
-          rm -f export_diagnostic.gd
+          set -euo pipefail
+          echo "JAVA_HOME=$JAVA_HOME"
+          echo "ANDROID_HOME=$ANDROID_HOME"
+          java -version
+          for file in "$HOME/.config/godot/editor_settings-4.tres" "$HOME/.config/godot/editor_settings-4.3.tres"; do
+            test -s "$file"
+            echo "Verified settings file: $file"
+            grep -E 'export/android/(android_sdk_path|java_sdk_path|debug_keystore)' "$file"
+          done
+          test -s "$HOME/.android/debug.keystore"
+          test -f "$ANDROID_HOME/platforms/android-34/android.jar"
+          test -f "$HOME/.local/share/godot/export_templates/4.3.stable/android_debug.apk"
       - name: Build debug APK
         run: |
           mkdir -p build
