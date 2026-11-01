@@ -111,7 +111,7 @@ func _build_ui() -> void:
 	ui_root = root
 	_apply_ui_theme(root)
 	var top := PanelContainer.new()
-	top.position = Vector2(14, 12)
+	top.position = Vector2(12, 10)
 	top.size = Vector2(1252, 78)
 	root.add_child(top)
 	var info := HBoxContainer.new()
