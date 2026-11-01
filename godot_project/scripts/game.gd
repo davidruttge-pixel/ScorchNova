@@ -792,16 +792,39 @@ func _draw_tank(i: int) -> void:
 		return
 	var pos := _tank_pos(i)
 	var c: Color = p["color"]
-	draw_rect(Rect2(pos + Vector2(-24, -1), Vector2(48, 12)), Color("101827"))
-	for wheel_x in [-16, -5, 6, 17]:
-		draw_circle(pos + Vector2(wheel_x, 7), 4, Color("8190a5"))
-	draw_rect(Rect2(pos + Vector2(-22, -1), Vector2(44, 9)), c.darkened(0.38))
-	draw_rect(Rect2(pos + Vector2(-17, -12), Vector2(34, 13)), c)
-	draw_circle(pos + Vector2(0, -12), 9, c.lightened(0.25))
+	# Chunky outlined cartoon tracks and highlighted wheels.
+	draw_rect(Rect2(pos + Vector2(-25, -2), Vector2(50, 15)), Color("182039"))
+	draw_rect(Rect2(pos + Vector2(-22, 0), Vector2(44, 11)), c.darkened(0.52))
+	for wheel_x in [-17, -6, 5, 16]:
+		draw_circle(pos + Vector2(wheel_x, 6), 5.3, Color("12182b"))
+		draw_circle(pos + Vector2(wheel_x, 6), 3.4, Color("93a7be"))
+		draw_circle(pos + Vector2(wheel_x - 1, 5), 1.3, Color("d9eaff"))
+	# Sloped hull with thick comic outline.
+	var hull := PackedVector2Array([
+		pos + Vector2(-22, -2), pos + Vector2(-17, -15),
+		pos + Vector2(14, -15), pos + Vector2(22, -2)
+	])
+	draw_colored_polygon(hull, Color("15223b"))
+	var hull_inner := PackedVector2Array([
+		pos + Vector2(-19, -3), pos + Vector2(-14, -12),
+		pos + Vector2(12, -12), pos + Vector2(19, -3)
+	])
+	draw_colored_polygon(hull_inner, c)
+	draw_line(pos + Vector2(-12, -11), pos + Vector2(10, -11), c.lightened(0.5), 2.5, true)
+	# Turret, hatch and gun remain anchored to the original firing position.
+	draw_circle(pos + Vector2(0, -14), 11, Color("15223b"))
+	draw_circle(pos + Vector2(0, -14), 8.5, c.lightened(0.2))
+	draw_arc(pos + Vector2(-2, -16), 5.0, PI * 1.05, PI * 1.85, 12, Color("f2f7ff", 0.7), 2.0)
+	draw_rect(Rect2(pos + Vector2(-5, -26), Vector2(10, 4)), Color("17223b"))
+	draw_rect(Rect2(pos + Vector2(-3, -25), Vector2(6, 2)), c.lightened(0.55))
 	var dir := 1.0 if i < players.size() / 2.0 else -1.0
 	var a := deg_to_rad(float(p["angle"]))
 	var start := pos + Vector2(0, -13)
-	draw_line(start, start + Vector2(dir * cos(a), -sin(a)) * 30, c.lightened(0.5), 7)
+	var end := start + Vector2(dir * cos(a), -sin(a)) * 30
+	draw_line(start, end, Color("17223b"), 10.0, true)
+	draw_line(start, end, c.lightened(0.25), 6.5, true)
+	draw_circle(end, 4.3, Color("17223b"))
+	draw_circle(end, 2.5, Color("a6b8cb"))
 	if p["shield"] > 0:
 		draw_arc(pos + Vector2(0, -6), 31, PI, TAU, 40, Color("7cecff", 0.75), 3)
 	var bar := Rect2(pos + Vector2(-23, -43), Vector2(46, 5))
