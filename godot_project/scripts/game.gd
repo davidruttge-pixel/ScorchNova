@@ -895,8 +895,8 @@ func _draw_trajectory() -> void:
 	var v: Vector2 = Vector2(cos(a) * direction, -sin(a)) * float(p["power"]) * 6.3
 	var pos: Vector2 = _tank_pos(current) + Vector2(direction * 19, -17)
 	var start_x: float = pos.x
-	var dt: float = 1.0 / 300.0
-	for i in range(2400):
+	var dt: float = 1.0 / 150.0
+	for i in range(900):
 		v += Vector2(wind * 0.45, GRAVITY) * dt
 		pos += v * dt
 		if pos.x < 0.0 or pos.x > W or pos.y > float(TerrainModel.FLOOR) + 50.0:
@@ -904,10 +904,9 @@ func _draw_trajectory() -> void:
 		if pos.y >= terrain.height_at(pos.x):
 			draw_circle(pos, 5.0, Color("ffe081", 0.8))
 			break
-		if i % 35 == 0:
+		if i % 18 == 0:
 			draw_circle(pos, 2.0, Color("ffffff", 0.78))
 	# A subtle horizontal ruler helps estimate the shot distance.
-	var reach: float = absf(pos.x - start_x)
 	var bar_y: float = 605.0
 	draw_line(Vector2(start_x, bar_y), Vector2(pos.x, bar_y), Color("8fe8ff", 0.55), 2.0)
 	draw_circle(Vector2(pos.x, bar_y), 3.0, Color("8fe8ff", 0.85))
