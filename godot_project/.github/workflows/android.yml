@@ -1,0 +1,32 @@
+name: Android APK
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Godot and export templates
+        run: |
+          wget -q https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_linux.x86_64.zip
+          unzip -q Godot_v4.3-stable_linux.x86_64.zip
+          chmod +x Godot_v4.3-stable_linux.x86_64
+          mkdir -p "$HOME/.local/share/godot/export_templates/4.3.stable"
+          wget -q https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_export_templates.tpz
+          unzip -q Godot_v4.3-stable_export_templates.tpz
+          mv templates/* "$HOME/.local/share/godot/export_templates/4.3.stable/"
+      - name: Import project and check scripts
+        run: |
+          ./Godot_v4.3-stable_linux.x86_64 --headless --path . --editor --quit
+          ./Godot_v4.3-stable_linux.x86_64 --headless --path . --quit-after 60
+      - name: Build debug APK
+        run: |
+          mkdir -p build
+          ./Godot_v4.3-stable_linux.x86_64 --headless --path . --export-debug Android build/ScorchNova-debug.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ScorchNova-Android-APK
+          path: build/ScorchNova-debug.apk
+          if-no-files-found: error
