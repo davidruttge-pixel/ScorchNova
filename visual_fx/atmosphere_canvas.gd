@@ -13,6 +13,30 @@ func _draw() -> void:
         return
     var w: float = viewport_size.x
     var h: float = viewport_size.y
+    # Cinematic sci-fi celestial bodies, translucent to preserve game readability.
+    var moon_pos := Vector2(w * 0.82, h * 0.105)
+    for halo in range(7, 0, -1):
+        var hr: float = h * (0.021 + float(halo) * 0.011)
+        draw_circle(moon_pos, hr, Color(0.38, 0.30, 0.95, 0.004))
+    draw_circle(moon_pos, h * 0.027, Color(0.48, 0.62, 1.0, 0.12))
+    draw_arc(moon_pos, h * 0.034, -0.9, 2.6, 38, Color(0.65, 0.75, 1.0, 0.18), 1.4)
+    var planet_pos := Vector2(w * 0.18, h * 0.09)
+    draw_circle(planet_pos, h * 0.017, Color(0.84, 0.38, 0.78, 0.10))
+    draw_arc(planet_pos, h * 0.028, 0.1, 3.0, 34, Color(0.85, 0.45, 0.95, 0.14), 1.5)
+    # Diagonal ionized nebula bands: subtle purple/blue atmospheric ribbons.
+    for band in range(6):
+        var b: float = float(band)
+        var yy: float = h * (0.015 + b * 0.024)
+        var offset: float = sin(elapsed * 0.08 + b) * 8.0
+        draw_line(Vector2(0.0, yy + offset), Vector2(w, yy + h * 0.065 + offset), Color(0.51, 0.24 + b * 0.02, 0.85, 0.018), 7.0)
+    # Futuristic distant beacon lights on the skyline.
+    for beacon in range(7):
+        var n: float = float(beacon)
+        var bx: float = w * (n + 0.6) / 7.0
+        var by: float = h * (0.17 + fmod(n * 0.023, 0.045))
+        var blink: float = 0.5 + 0.5 * sin(elapsed * 1.5 + n * 2.4)
+        draw_circle(Vector2(bx, by), 4.0 + blink * 2.0, Color(0.25, 0.8, 1.0, 0.018))
+        draw_circle(Vector2(bx, by), 1.2, Color(0.55, 0.95, 1.0, 0.12 + blink * 0.13))
     # High-altitude cloud wisps: transparent, layered and slowly drifting.
     # Drawn only across the top of the viewport to avoid covering gameplay.
     for cloud in range(9):
