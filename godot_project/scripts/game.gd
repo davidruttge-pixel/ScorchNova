@@ -51,6 +51,10 @@ var matches_played := 0
 var tournament_target := 3
 var sound_enabled := true
 var sound_players: Dictionary = {}
+var touch_aim_enabled := true
+var touch_aim_dragging := false
+var touch_aim_index := -1
+var touch_aim_origin := Vector2.ZERO
 var ui_root: Control
 
 func _ready() -> void:
@@ -61,6 +65,44 @@ func _ready() -> void:
 	_setup_audio()
 	_new_game()
 	_show_menu()
+
+func _unhandled_input(event: InputEvent) -> void:
+	if not touch_aim_enabled or menu_open or game_over or phase != "aim" or players.is_empty() or players[current]["cpu"]:
+		return
+	if event is InputEventScreenTouch:
+		var touch: InputEventScreenTouch = event
+		if touch.pressed:
+			if touch.position.y > 570.0 or touch.position.y < 105.0:
+				return
+			var origin: Vector2 = _tank_pos(current)
+			if touch.position.distance_to(origin) < 125.0:
+				touch_aim_dragging = true
+				touch_aim_index = touch.index
+				touch_aim_origin = origin
+				get_viewport().set_input_as_handled()
+		elif touch_aim_dragging and touch.index == touch_aim_index:
+			_update_touch_aim(touch.position)
+			touch_aim_dragging = false
+			touch_aim_index = -1
+			get_viewport().set_input_as_handled()
+	elif event is InputEventScreenDrag:
+		var drag: InputEventScreenDrag = event
+		if touch_aim_dragging and drag.index == touch_aim_index:
+			_update_touch_aim(drag.position)
+			get_viewport().set_input_as_handled()
+
+func _update_touch_aim(target: Vector2) -> void:
+	var offset: Vector2 = target - touch_aim_origin
+	if offset.length() < 12.0:
+		return
+	shot_direction = 1.0 if offset.x >= 0.0 else -1.0
+	controls["direction"].text = "RICHTUNG: " + (">" if shot_direction > 0.0 else "<")
+	var angle: float = rad_to_deg(atan2(-offset.y, absf(offset.x)))
+	var power: float = clampf(offset.length() / 2.2, 15.0, 100.0)
+	players[current]["angle"] = snappedf(clampf(angle, 5.0, 175.0), 0.5)
+	players[current]["power"] = snappedf(power, 0.5)
+	_refresh_ui()
+	queue_redraw()
 
 func _setup_audio() -> void:
 	for sound_name in ["fire", "impact", "victory"]:
@@ -200,6 +242,12 @@ func _build_ui() -> void:
 	power_label.custom_minimum_size.x = 112
 	row.add_child(power_label)
 	labels["power"] = power_label
+	var touch_button := Button.new()
+	touch_button.text = "TOUCH: AN"
+	touch_button.custom_minimum_size = Vector2(150, 94)
+	touch_button.pressed.connect(_toggle_touch_aim)
+	row.add_child(touch_button)
+	controls["touch_aim"] = touch_button
 	var shop := Button.new()
 	shop.text = "SHOP"
 	shop.custom_minimum_size = Vector2(120, 94)
@@ -394,7 +442,7 @@ func _refresh_ui() -> void:
 	labels["angle"].text = "Winkel %.1f°" % float(p["angle"])
 	labels["power"].text = "Kraft %.1f%%" % float(p["power"])
 	var enabled := not p["cpu"] and phase == "aim" and not game_over
-	for key in ["angle", "power", "angle_minus", "angle_plus", "power_minus", "power_plus", "weapon", "shop", "fire", "direction"]:
+	for key in ["angle", "power", "angle_minus", "angle_plus", "power_minus", "power_plus", "weapon", "shop", "fire", "direction", "touch_aim"]:
 		controls[key].disabled = not enabled
 	controls["difficulty"].text = "KI: " + ["LEICHT", "NORMAL", "SCHWER"][ai_difficulty]
 	controls["direction"].text = "RICHTUNG: " + (">" if shot_direction > 0 else "<")
@@ -405,6 +453,12 @@ func _refresh_ui() -> void:
 	labels["scoreboard"].text = "TURNIER (bis %d Siege): %s" % [tournament_target, str(match_wins.slice(0, player_count))]
 	for i in range(WEAPONS.size()):
 		controls["weapon"].set_item_text(i, "%s (%d)" % [WEAPONS[i], p["ammo"][i]])
+
+func _toggle_touch_aim() -> void:
+	touch_aim_enabled = not touch_aim_enabled
+	touch_aim_dragging = false
+	controls["touch_aim"].text = "TOUCH: AN" if touch_aim_enabled else "TOUCH: AUS"
+	queue_redraw()
 
 func _toggle_direction() -> void:
 	if players[current]["cpu"] or phase != "aim":
