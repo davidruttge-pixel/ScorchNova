@@ -22,7 +22,6 @@ jobs:
           sed -i 's/var enabled := not p\["cpu"\]/var enabled: bool = not p["cpu"]/' scripts/game.gd
           sed -i 's/var cost := {"armor"/var cost: int = {"armor"/' scripts/game.gd
           test -f project.godot
-          sed -i 's/package\/signed=true/package\/signed=false/' export_presets.cfg
       - name: Install Godot 4.3 and templates
         run: |
           curl -fL --retry 3 -o godot.zip https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_linux.x86_64.zip
@@ -64,6 +63,7 @@ jobs:
           export/android/debug_keystore_user = "androiddebugkey"
           export/android/debug_keystore_pass = "android"
           EOF
+          cp "$SETTINGS" "$HOME/.config/godot/editor_settings-4.tres"
           test -s "$SETTINGS"
           test -s "$HOME/.android/debug.keystore"
           test -f "$ANDROID_HOME/platforms/android-34/android.jar"
@@ -76,7 +76,7 @@ jobs:
       - name: Build debug APK
         run: |
           mkdir -p build
-          ./Godot_v4.3-stable_linux.x86_64 --headless --path . --export-debug Android build/ScorchNova-debug.apk
+          ./Godot_v4.3-stable_linux.x86_64 --headless --verbose --path . --export-debug Android build/ScorchNova-debug.apk
           test -s build/ScorchNova-debug.apk
       - uses: actions/upload-artifact@v4
         with:
