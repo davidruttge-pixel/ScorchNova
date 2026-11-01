@@ -76,25 +76,18 @@ jobs:
       - name: Reimport with configured Android editor settings
         run: |
           ./Godot_v4.3-stable_linux.x86_64 --headless --verbose --path . --editor --quit
-      - name: Inspect Godot Android export validation
+      - name: Inspect effective Godot editor settings
         run: |
           cat > export_diagnostic.gd <<'EOF'
           @tool
           extends EditorScript
 
           func _run() -> void:
-              var presets := EditorExport.get_export_preset_count()
-              print("DIAGNOSTIC: export preset count: ", presets)
-              for i in range(presets):
-                  var preset := EditorExport.get_export_preset(i)
-                  var platform := preset.get_platform()
-                  var error := ""
-                  var ok := platform.can_export(preset, false)
-                  print("DIAGNOSTIC: preset ", preset.get_name(), " platform ", platform.get_name(), " can_export=", ok)
-                  print("DIAGNOSTIC: android sdk=", EditorInterface.get_editor_settings().get_setting("export/android/android_sdk_path"))
-                  print("DIAGNOSTIC: java sdk=", EditorInterface.get_editor_settings().get_setting("export/android/java_sdk_path"))
+              var settings: EditorSettings = EditorInterface.get_editor_settings()
+              for key in ["export/android/android_sdk_path", "export/android/java_sdk_path", "export/android/debug_keystore", "export/android/debug_keystore_user"]:
+                  print("DIAGNOSTIC ", key, " exists=", settings.has_setting(key), " value=", settings.get_setting(key) if settings.has_setting(key) else "<missing>")
           EOF
-          ./Godot_v4.3-stable_linux.x86_64 --headless --path . --editor --script export_diagnostic.gd || true
+          ./Godot_v4.3-stable_linux.x86_64 --headless --path . --editor --script export_diagnostic.gd
           rm -f export_diagnostic.gd
       - name: Build debug APK
         run: |
