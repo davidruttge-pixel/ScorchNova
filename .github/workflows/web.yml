@@ -101,6 +101,16 @@ jobs:
           mkdir -p web
           ./Godot_v4.3-stable_linux.x86_64 --headless --verbose --path . --export-debug Web web/index.html
           test -s web/index.html
+          cp visual_fx/web_overlay.js web/scorchnova-sky.js
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('web/index.html')
+          html = p.read_text()
+          assert '</body>' in html, 'Missing HTML body close tag'
+          html = html.replace('</body>', '<script defer src="scorchnova-sky.js?v=2"></script></body>')
+          p.write_text(html)
+          assert 'scorchnova-sky.js' in p.read_text()
+          PY
       - uses: actions/upload-artifact@v4
         with:
           name: ScorchNova-Browser-Spiel
