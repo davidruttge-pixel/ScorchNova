@@ -48,6 +48,15 @@ jobs:
           mkdir -p "$(dirname "$SETTINGS")"
           if [ ! -f "$SETTINGS" ]; then printf '[gd_resource type="EditorSettings" format=3]\n\n[resource]\n' > "$SETTINGS"; fi
           printf '\nexport/android/android_sdk_path = "%s"\nexport/android/java_sdk_path = "%s"\n' "$ANDROID_HOME" "$JAVA_HOME" >> "$SETTINGS"
+      - name: Diagnose Android export preset
+        run: |
+          echo "=== export_presets.cfg ==="
+          if [ -f export_presets.cfg ]; then cat export_presets.cfg; else echo "MISSING export_presets.cfg"; fi
+          echo "=== editor settings ==="
+          cat "$HOME/.config/godot/editor_settings-4.tres" || true
+          echo "=== SDK and Java ==="
+          ls -la "$ANDROID_HOME" | head
+          java -version
       - name: Build debug APK
         run: |
           mkdir -p build
