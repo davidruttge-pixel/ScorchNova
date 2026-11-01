@@ -828,24 +828,6 @@ func _draw_tank(i: int) -> void:
 	])
 	draw_colored_polygon(hull_inner, c)
 	draw_line(pos + Vector2(-12, -11), pos + Vector2(10, -11), c.lightened(0.5), 2.5, true)
-	# Zebra mascot drawn in game coordinates, independent of gameplay physics.
-	var head: Vector2 = pos + Vector2(-4, -34)
-	draw_circle(head + Vector2(-7, -9), 5.0, Color("19182a"))
-	draw_circle(head + Vector2(6, -9), 5.0, Color("19182a"))
-	draw_circle(head + Vector2(-7, -9), 3.4, Color("fff8ef"))
-	draw_circle(head + Vector2(6, -9), 3.4, Color("fff8ef"))
-	draw_circle(head, 12.5, Color("171725"))
-	draw_circle(head, 10.4, Color("fff9f0"))
-	for stripe in range(3):
-		var stripe_x: float = -7.0 + float(stripe) * 5.0
-		draw_line(head + Vector2(stripe_x, -8), head + Vector2(stripe_x + 3.0, -2), Color("242332"), 2.3, true)
-	draw_circle(head + Vector2(7, 5), 6.5, Color("22202e"))
-	draw_circle(head + Vector2(7, 5), 5.0, Color("b9b1bc"))
-	draw_circle(head + Vector2(5, 3), 1.0, Color("27222b"))
-	draw_circle(head + Vector2(9, 3), 1.0, Color("27222b"))
-	draw_circle(head + Vector2(-3, -2), 2.7, Color("1b1b29"))
-	draw_circle(head + Vector2(-2.4, -2.6), 0.9, Color.WHITE)
-	draw_arc(head + Vector2(-3, -3), 4.5, 0.0, TAU, 18, c.lightened(0.3), 2.0)
 	# Turret, hatch and gun remain anchored to the original firing position.
 	draw_circle(pos + Vector2(0, -14), 11, Color("15223b"))
 	draw_circle(pos + Vector2(0, -14), 8.5, c.lightened(0.2))
@@ -860,6 +842,24 @@ func _draw_tank(i: int) -> void:
 	draw_line(start, end, c.lightened(0.25), 6.5, true)
 	draw_circle(end, 4.3, Color("17223b"))
 	draw_circle(end, 2.5, Color("a6b8cb"))
+	# Zebra mascot drawn in game coordinates, independent of gameplay physics.
+	var head: Vector2 = pos + Vector2(-4, -48)
+	draw_circle(head + Vector2(-7, -9), 5.0, Color("19182a"))
+	draw_circle(head + Vector2(6, -9), 5.0, Color("19182a"))
+	draw_circle(head + Vector2(-7, -9), 3.4, Color("fff8ef"))
+	draw_circle(head + Vector2(6, -9), 3.4, Color("fff8ef"))
+	draw_circle(head, 17.5, Color("171725"))
+	draw_circle(head, 15.4, Color("fff9f0"))
+	for stripe in range(3):
+		var stripe_x: float = -7.0 + float(stripe) * 5.0
+		draw_line(head + Vector2(stripe_x, -8), head + Vector2(stripe_x + 3.0, -2), Color("242332"), 2.3, true)
+	draw_circle(head + Vector2(10, 7), 9.0, Color("22202e"))
+	draw_circle(head + Vector2(10, 7), 7.2, Color("b9b1bc"))
+	draw_circle(head + Vector2(5, 3), 1.0, Color("27222b"))
+	draw_circle(head + Vector2(9, 3), 1.0, Color("27222b"))
+	draw_circle(head + Vector2(-3, -2), 2.7, Color("1b1b29"))
+	draw_circle(head + Vector2(-2.4, -2.6), 0.9, Color.WHITE)
+	draw_arc(head + Vector2(-3, -3), 4.5, 0.0, TAU, 18, c.lightened(0.3), 2.0)
 	if p["shield"] > 0:
 		draw_arc(pos + Vector2(0, -6), 31, PI, TAU, 40, Color("7cecff", 0.75), 3)
 	var bar := Rect2(pos + Vector2(-23, -43), Vector2(46, 5))
