@@ -8,6 +8,7 @@ on:
       - 'ScorchNova_Android_GitHub_Upload_NEU.zip'
       - 'visual_fx/**'
       - 'godot_project/scripts/terrain.gd'
+      - 'godot_project/scripts/game.gd'
 permissions:
   contents: read
   pages: write
@@ -27,6 +28,7 @@ jobs:
           cp -a extracted/ScorchNova_v1.0/. .
           rm -rf extracted
           cp godot_project/scripts/terrain.gd scripts/terrain.gd
+          cp godot_project/scripts/game.gd scripts/game.gd
           sed -i 's/var enabled := not p\["cpu"\]/var enabled: bool = not p["cpu"]/' scripts/game.gd
           sed -i 's/var cost := {"armor"/var cost: int = {"armor"/' scripts/game.gd
       - name: Enable optional cinematic visual layer
