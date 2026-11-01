@@ -8,10 +8,15 @@ on:
       - 'ScorchNova_Android_GitHub_Upload_NEU.zip'
 permissions:
   contents: read
+  pages: write
+  id-token: write
 jobs:
   web:
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
       - name: Unpack project
@@ -84,3 +89,12 @@ jobs:
           name: ScorchNova-Browser-Spiel
           path: web/
           if-no-files-found: error
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+      - name: Package website for GitHub Pages
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: web/
+      - name: Deploy ScorchNova website
+        id: deployment
+        uses: actions/deploy-pages@v4
