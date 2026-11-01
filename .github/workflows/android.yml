@@ -50,6 +50,7 @@ jobs:
         run: |
           python3 - <<'PY'
           from pathlib import Path
+          import re
           p = Path("export_presets.cfg")
           s = p.read_text()
           assert '[preset.0.options]' in s and 'platform="Android"' in s
@@ -59,80 +60,14 @@ jobs:
               "keystore/debug_password": "android",
           }
           for key, value in options.items():
-              import re
               entry = f'{key}="{value}"'
-              if re.search(r'^' + re.escape(key) + r'=', s, flags=re.M):
-                  s = re.sub(r'^' + re.escape(key) + r'=.*
-        run: ./Godot_v4.3-stable_linux.x86_64 --headless --path . --editor --quit
-      - name: Configure Godot Android settings and validate SDK
-        run: |
-          set -euo pipefail
-          SETTINGS="$HOME/.config/godot/editor_settings-4.3.tres"
-          mkdir -p "$(dirname "$SETTINGS")"
-          cat > "$SETTINGS" <<EOF
-          [gd_resource type="EditorSettings" format=3]
-
-          [resource]
-          export/android/android_sdk_path = "$ANDROID_HOME"
-          export/android/java_sdk_path = "$JAVA_HOME"
-          export/android/debug_keystore = "$HOME/.android/debug.keystore"
-          export/android/debug_keystore_user = "androiddebugkey"
-          export/android/debug_keystore_pass = "android"
-          EOF
-          cp "$SETTINGS" "$HOME/.config/godot/editor_settings-4.tres"
-          test -s "$SETTINGS"
-          test -s "$HOME/.android/debug.keystore"
-          test -f "$ANDROID_HOME/platforms/android-34/android.jar"
-          test -f "$ANDROID_HOME/build-tools/34.0.0/aapt2"
-          test -f "$HOME/.local/share/godot/export_templates/4.3.stable/android_debug.apk"
-          echo "Editor settings path: $SETTINGS"
-          cat "$SETTINGS"
-          echo "Android export preset:"
-          cat export_presets.cfg
-      - name: Reimport with configured Android editor settings
-        run: |
-          ./Godot_v4.3-stable_linux.x86_64 --headless --verbose --path . --editor --quit
-      - name: Inspect Android configuration without editor scripting
-        run: |
-          set -euo pipefail
-          echo "JAVA_HOME=$JAVA_HOME"
-          echo "ANDROID_HOME=$ANDROID_HOME"
-          java -version
-          for file in "$HOME/.config/godot/editor_settings-4.tres" "$HOME/.config/godot/editor_settings-4.3.tres"; do
-            test -s "$file"
-            echo "Verified settings file: $file"
-            grep -E 'export/android/(android_sdk_path|java_sdk_path|debug_keystore)' "$file"
-          done
-          test -s "$HOME/.android/debug.keystore"
-          test -f "$ANDROID_HOME/platforms/android-34/android.jar"
-          test -f "$HOME/.local/share/godot/export_templates/4.3.stable/android_debug.apk"
-      - name: Diagnose loaded Godot Android SDK settings
-        run: |
-          cat > /tmp/scorchnova_diagnose.gd <<'EOF'
-          extends SceneTree
-
-          func _initialize() -> void:
-              var settings = EditorInterface.get_editor_settings()
-              for key in ["export/android/android_sdk_path", "export/android/java_sdk_path", "export/android/debug_keystore", "export/android/debug_keystore_user"]:
-                  print("SDK_DIAG: ", key, " present=", settings.has_setting(key), " value=", str(settings.get_setting(key)) if settings.has_setting(key) else "MISSING")
-              quit()
-          EOF
-          ./Godot_v4.3-stable_linux.x86_64 --headless --editor --path . --script /tmp/scorchnova_diagnose.gd
-      - name: Build debug APK
-        run: |
-          mkdir -p build
-          ./Godot_v4.3-stable_linux.x86_64 --headless --verbose --path . --export-debug Android build/ScorchNova-debug.apk
-          test -s build/ScorchNova-debug.apk
-      - uses: actions/upload-artifact@v4
-        with:
-          name: ScorchNova-Android-APK
-          path: build/ScorchNova-debug.apk
-          if-no-files-found: error
-, lambda _: entry, s, flags=re.M)
+              pattern = r'^' + re.escape(key) + r'=.*$'
+              if re.search(pattern, s, flags=re.M):
+                  s = re.sub(pattern, lambda _: entry, s, flags=re.M)
               else:
-                  s += '\\n' + entry
+                  s += '\n' + entry
           p.write_text(s)
-          print("Configured explicit debug keystore in Android export preset")
+          print("Explicit Android debug signing configured")
           PY
       - name: Import project
         run: ./Godot_v4.3-stable_linux.x86_64 --headless --path . --editor --quit
