@@ -18,6 +18,9 @@ jobs:
         run: |
           unzip -q ScorchNova_Android_GitHub_Upload_NEU.zip -d extracted
           cp -a extracted/ScorchNova_v1.0/. .
+          rm -rf extracted
+          sed -i 's/var enabled := not p\["cpu"\]/var enabled: bool = not p["cpu"]/' scripts/game.gd
+          sed -i 's/var cost := {"armor"/var cost: int = {"armor"/' scripts/game.gd
           test -f project.godot
       - name: Install Godot 4.3 and templates
         run: |
@@ -31,6 +34,9 @@ jobs:
       - name: Configure Android SDK and debug signing
         run: |
           echo "ANDROID_HOME=$ANDROID_HOME"
+          echo "JAVA_HOME=$JAVA_HOME"
+          mkdir -p "$HOME/.config/godot"
+          printf '[gd_resource type="EditorSettings" format=3]\\n\\n[resource]\\nexport/android/android_sdk_path = "%s"\\nexport/android/java_sdk_path = "%s"\\n' "$ANDROID_HOME" "$JAVA_HOME" > "$HOME/.config/godot/editor_settings-4.tres"
           mkdir -p "$HOME/.android"
           keytool -genkeypair -v -keystore "$HOME/.android/debug.keystore" -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
           echo "GODOT_ANDROID_KEYSTORE_DEBUG_PATH=$HOME/.android/debug.keystore" >> "$GITHUB_ENV"
