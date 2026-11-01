@@ -6,6 +6,7 @@ on:
     paths:
       - '.github/workflows/web.yml'
       - 'ScorchNova_Android_GitHub_Upload_NEU.zip'
+      - 'visual_fx/**'
 permissions:
   contents: read
   pages: write
