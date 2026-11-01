@@ -25,6 +25,30 @@ func _draw() -> void:
             Vector2(top_x - w * 0.17, h * 0.76)
         ])
         draw_colored_polygon(points, Color(0.19, 0.48, 0.9, 0.012))
+    # Three distant parallax silhouettes. Kept in the upper sky so the
+    # foreground battlefield, tanks and controls remain unobstructed.
+    for depth in range(3):
+        var ridge := PackedVector2Array()
+        var d: float = float(depth)
+        var base_y: float = h * (0.13 + d * 0.045)
+        var amplitude: float = h * (0.018 + d * 0.008)
+        var speed: float = 0.35 + d * 0.25
+        ridge.append(Vector2(0.0, 0.0))
+        for k in range(25):
+            var px: float = w * float(k) / 24.0
+            var phase: float = px / maxf(w, 1.0) * 11.0 + elapsed * 0.012 * speed
+            var py: float = base_y + sin(phase + d * 2.1) * amplitude + sin(phase * 2.4) * amplitude * 0.25
+            ridge.append(Vector2(px, py))
+        ridge.append(Vector2(w, 0.0))
+        var tint := Color(0.11 + d * 0.02, 0.19 + d * 0.025, 0.36 + d * 0.035, 0.055 + d * 0.012)
+        draw_colored_polygon(ridge, tint)
+    # Simulated soft lens glows; no costly post-processing pass.
+    for j in range(3):
+        var fx: float = w * (0.2 + float(j) * 0.3)
+        var fy: float = h * (0.08 + float(j % 2) * 0.07)
+        var breathing: float = 0.65 + 0.35 * sin(elapsed * 0.7 + float(j) * 2.0)
+        for ring in range(4, 0, -1):
+            draw_circle(Vector2(fx, fy), float(ring) * 15.0 * breathing, Color(0.25, 0.55, 1.0, 0.006))
     # Slowly drifting glowing motes, deterministic and cheap.
     for i in range(34):
         var seed: float = float(i)
