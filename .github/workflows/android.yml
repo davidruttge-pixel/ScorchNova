@@ -73,6 +73,9 @@ jobs:
           cat "$SETTINGS"
           echo "Android export preset:"
           cat export_presets.cfg
+      - name: Reimport with configured Android editor settings
+        run: |
+          ./Godot_v4.3-stable_linux.x86_64 --headless --verbose --path . --editor --quit
       - name: Build debug APK
         run: |
           mkdir -p build
