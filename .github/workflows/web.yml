@@ -86,11 +86,14 @@ jobs:
           print(s)
           PY
       - name: Import project
-        run: ./Godot_v4.3-stable_linux.x86_64 --headless --editor --path . --quit
+        run: |
+          ./Godot_v4.3-stable_linux.x86_64 --headless --editor --path . --quit 2>&1 | tee godot-import.log
+          if grep -Eq "SCRIPT ERROR:|Parse Error:|Failed to load script" godot-import.log; then exit 1; fi
       - name: Export browser game
         run: |
           mkdir -p web
-          ./Godot_v4.3-stable_linux.x86_64 --headless --verbose --path . --export-debug Web web/index.html
+          ./Godot_v4.3-stable_linux.x86_64 --headless --verbose --path . --export-debug Web web/index.html 2>&1 | tee godot-export.log
+          if grep -Eq "SCRIPT ERROR:|Parse Error:|Failed to load script" godot-export.log; then exit 1; fi
           test -s web/index.html
           # Publish a fresh standalone path to bypass stale mobile browser caches.
           mkdir -p web/zebra
