@@ -13,6 +13,25 @@ func _draw() -> void:
         return
     var w: float = viewport_size.x
     var h: float = viewport_size.y
+    # High-altitude cloud wisps: transparent, layered and slowly drifting.
+    # Drawn only across the top of the viewport to avoid covering gameplay.
+    for cloud in range(9):
+        var c: float = float(cloud)
+        var cx: float = fposmod(c * w * 0.173 + elapsed * (1.0 + fmod(c, 3.0)) * 0.6, w + 160.0) - 80.0
+        var cy: float = h * (0.035 + fmod(c * 0.071, 0.14))
+        var width_scale: float = 0.7 + fmod(c * 0.37, 0.7)
+        for puff in range(5):
+            var p: float = float(puff)
+            var pos := Vector2(cx + (p - 2.0) * 21.0 * width_scale, cy + sin(p * 1.7 + c) * 5.0)
+            var radius: float = (19.0 + 8.0 * sin(p * 0.9 + c)) * width_scale
+            draw_circle(pos, radius, Color(0.65, 0.78, 1.0, 0.018))
+    # Distant stars and atmospheric specks in the upper sky.
+    for star in range(42):
+        var n: float = float(star)
+        var sx: float = fposmod(n * 197.31 + 29.0, w)
+        var sy: float = fposmod(n * 31.67 + 13.0, maxf(h * 0.24, 1.0))
+        var shimmer: float = 0.5 + 0.5 * sin(elapsed * 0.55 + n * 2.7)
+        draw_circle(Vector2(sx, sy), 0.65 + shimmer * 0.5, Color(0.77, 0.87, 1.0, 0.05 + shimmer * 0.07))
     # Atmospheric light shafts in the upper sky.
     for i in range(5):
         var center_x: float = w * (0.13 + float(i) * 0.19)
@@ -42,6 +61,28 @@ func _draw() -> void:
         ridge.append(Vector2(w, 0.0))
         var tint := Color(0.11 + d * 0.02, 0.19 + d * 0.025, 0.36 + d * 0.035, 0.055 + d * 0.012)
         draw_colored_polygon(ridge, tint)
+    # Snow-tipped distant peaks and fine ridge highlights add depth.
+    # All mountain detail remains above 26% of screen height.
+    for peak in range(14):
+        var p: float = float(peak)
+        var x: float = w * (p + 0.25) / 14.0
+        var y: float = h * (0.145 + fmod(p * 0.031, 0.075))
+        var spread: float = w * (0.026 + fmod(p * 0.011, 0.015))
+        var tip := Vector2(x, y - h * (0.022 + fmod(p * 0.009, 0.017)))
+        var snow := PackedVector2Array([
+            tip,
+            Vector2(x - spread * 0.22, y - h * 0.007),
+            Vector2(x, y - h * 0.014),
+            Vector2(x + spread * 0.24, y - h * 0.003)
+        ])
+        draw_colored_polygon(snow, Color(0.73, 0.84, 1.0, 0.065))
+        draw_line(Vector2(x - spread, y), tip, Color(0.48, 0.66, 0.95, 0.035), 1.0)
+        draw_line(tip, Vector2(x + spread, y), Color(0.48, 0.66, 0.95, 0.035), 1.0)
+    # Fine atmospheric haze separating sky and distant ridges.
+    for haze in range(5):
+        var q: float = float(haze)
+        var yy: float = h * (0.17 + q * 0.017)
+        draw_line(Vector2(0.0, yy), Vector2(w, yy), Color(0.42, 0.62, 0.91, 0.012), 3.0)
     # Simulated soft lens glows; no costly post-processing pass.
     for j in range(3):
         var fx: float = w * (0.2 + float(j) * 0.3)
