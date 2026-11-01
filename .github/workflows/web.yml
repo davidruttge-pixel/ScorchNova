@@ -31,22 +31,6 @@ jobs:
           cp godot_project/scripts/game.gd scripts/game.gd
           sed -i 's/var enabled := not p\["cpu"\]/var enabled: bool = not p["cpu"]/' scripts/game.gd
           sed -i 's/var cost := {"armor"/var cost: int = {"armor"/' scripts/game.gd
-      - name: Enable optional cinematic visual layer
-        run: |
-          python3 - <<'PY'
-          from pathlib import Path
-          p = Path("project.godot")
-          s = p.read_text()
-          entry = 'ScorchNovaAtmosphere="*res://visual_fx/atmosphere.gd"'
-          if entry not in s:
-              if '[autoload]' in s:
-                  s = s.replace('[autoload]', '[autoload]\n' + entry, 1)
-              else:
-                  s += '\n[autoload]\n' + entry + '\n'
-          p.write_text(s)
-          assert Path("visual_fx/atmosphere.gd").exists()
-          assert Path("visual_fx/atmosphere_canvas.gd").exists()
-          PY
       - name: Install Godot and templates
         run: |
           curl -fL --retry 3 -o godot.zip https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_linux.x86_64.zip
@@ -105,16 +89,7 @@ jobs:
           mkdir -p web
           ./Godot_v4.3-stable_linux.x86_64 --headless --verbose --path . --export-debug Web web/index.html
           test -s web/index.html
-          cp visual_fx/web_overlay.js web/scorchnova-sky.js
-          python3 - <<'PY'
-          from pathlib import Path
-          p = Path('web/index.html')
-          html = p.read_text()
-          assert '</body>' in html, 'Missing HTML body close tag'
-          html = html.replace('</body>', '<script defer src="scorchnova-sky.js?v=2"></script></body>')
-          p.write_text(html)
-          assert 'scorchnova-sky.js' in p.read_text()
-          PY
+          # Native Godot visuals replace the previous HTML overlay.
       - uses: actions/upload-artifact@v4
         with:
           name: ScorchNova-Browser-Spiel
