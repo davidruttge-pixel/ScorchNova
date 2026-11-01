@@ -55,7 +55,7 @@ var ui_root: Control
 
 func _ready() -> void:
 	rng.randomize()
-	for i in range(85):
+	for i in range(55):
 		stars.append(Vector2(rng.randf_range(0, W), rng.randf_range(10, 370)))
 	_build_ui()
 	_setup_audio()
@@ -778,13 +778,13 @@ func _draw() -> void:
 		var y: float = float(band) * 45.0
 		draw_rect(Rect2(0, y, W, 47.0), Color("39218a").lerp(Color("b64cd0"), float(band) / 14.0))
 	var planet_center := Vector2(975, 174)
-	for glow in range(6, 0, -1):
+	for glow in range(4, 0, -1):
 		draw_circle(planet_center, 55.0 + float(glow) * 13.0, Color(0.68, 0.31, 0.96, 0.018))
 	draw_circle(planet_center, 62.0, Color("3925a1"))
 	draw_circle(planet_center + Vector2(-11, -11), 49.0, Color("8855d5"))
 	draw_arc(planet_center, 83.0, 0.0, TAU, 72, Color("e07dff"), 7.0)
 	# Rounded cloud clusters in the background only.
-	for cloud in range(7):
+	for cloud in range(5):
 		var cx: float = float(cloud * 197 + 42)
 		var cy: float = 150.0 + float(cloud % 3) * 45.0
 		for puff in range(5):
@@ -794,7 +794,7 @@ func _draw() -> void:
 		draw_circle(s, 1.4, Color("c9d5f7", 0.7))
 	for layer in range(3):
 		var poly := PackedVector2Array([Vector2(0, 615)])
-		for x in range(0, 1281, 12):
+		for x in range(0, 1281, 24):
 			var y := 310 + layer * 62 + sin(x * 0.007 + layer * 1.5) * 35 + sin(x * 0.019 + layer) * 19
 			poly.append(Vector2(x, y))
 		poly.append(Vector2(1280, 615))
@@ -812,7 +812,7 @@ func _draw() -> void:
 		draw_circle(visual_muzzle, 22.0 * muzzle_alpha, Color(1.0, 0.82, 0.3, muzzle_alpha * 0.5))
 		draw_circle(visual_muzzle, 10.0 * muzzle_alpha, Color(1.0, 0.96, 0.75, muzzle_alpha))
 	if projectile_active:
-		for j in range(visual_trail.size()):
+		for j in range(0, visual_trail.size(), 2):
 			var age: float = float(j + 1) / float(visual_trail.size() + 1)
 			var point: Vector2 = visual_trail[j]
 			draw_circle(point, 1.5 + 4.0 * age, Color(1.0, 0.47 + 0.35 * age, 0.18, 0.5 * age))
