@@ -150,8 +150,8 @@ func _build_ui() -> void:
 	angle.min_value = 5
 	angle.max_value = 175
 	angle.value = 48
-	angle.step = 1
-	angle.custom_minimum_size = Vector2(145, 65)
+	angle.step = 0.5
+	angle.custom_minimum_size = Vector2(175, 65)
 	angle.value_changed.connect(_angle_changed)
 	row.add_child(angle)
 	controls["angle"] = angle
@@ -163,8 +163,8 @@ func _build_ui() -> void:
 	power.min_value = 15
 	power.max_value = 100
 	power.value = 72
-	power.step = 1
-	power.custom_minimum_size = Vector2(125, 65)
+	power.step = 0.5
+	power.custom_minimum_size = Vector2(175, 65)
 	power.value_changed.connect(_power_changed)
 	row.add_child(power)
 	controls["power"] = power
@@ -362,8 +362,8 @@ func _refresh_ui() -> void:
 	controls["angle"].set_value_no_signal(p["angle"])
 	controls["power"].set_value_no_signal(p["power"])
 	controls["weapon"].select(p["weapon"])
-	labels["angle"].text = "Winkel %d°" % int(p["angle"])
-	labels["power"].text = "Kraft %d%%" % int(p["power"])
+	labels["angle"].text = "Winkel %.1f°" % float(p["angle"])
+	labels["power"].text = "Kraft %.1f%%" % float(p["power"])
 	var enabled := not p["cpu"] and phase == "aim" and not game_over
 	for key in ["angle", "power", "weapon", "shop", "fire", "direction"]:
 		controls[key].disabled = not enabled
@@ -888,18 +888,29 @@ func _draw_tank(i: int) -> void:
 	draw_rect(Rect2(bar.position, Vector2(54.0 * float(p["hp"]) / 100.0, 7)), Color("66f43f"))
 
 func _draw_trajectory() -> void:
+	# High precision preview using the same acceleration and substep duration as live shots.
 	var p: Dictionary = players[current]
-	var direction := shot_direction
-	var a := deg_to_rad(float(p["angle"]))
-	var v := Vector2(cos(a) * direction, -sin(a)) * float(p["power"]) * 6.3
-	var pos := _tank_pos(current) + Vector2(direction * 19, -17)
-	for i in range(48):
-		v += Vector2(wind * 0.45, GRAVITY) * 0.06
-		pos += v * 0.06
-		if pos.x < 0 or pos.x > W or pos.y > terrain.height_at(pos.x):
+	var direction: int = shot_direction
+	var a: float = deg_to_rad(float(p["angle"]))
+	var v: Vector2 = Vector2(cos(a) * direction, -sin(a)) * float(p["power"]) * 6.3
+	var pos: Vector2 = _tank_pos(current) + Vector2(direction * 19, -17)
+	var start_x: float = pos.x
+	var dt: float = 1.0 / 300.0
+	for i in range(2400):
+		v += Vector2(wind * 0.45, GRAVITY) * dt
+		pos += v * dt
+		if pos.x < 0.0 or pos.x > W or pos.y > float(TerrainModel.FLOOR) + 50.0:
 			break
-		if i % 3 == 0:
-			draw_circle(pos, 2.2, Color("ffffff", 0.75))
+		if pos.y >= terrain.height_at(pos.x):
+			draw_circle(pos, 5.0, Color("ffe081", 0.8))
+			break
+		if i % 35 == 0:
+			draw_circle(pos, 2.0, Color("ffffff", 0.78))
+	# A subtle horizontal ruler helps estimate the shot distance.
+	var reach: float = absf(pos.x - start_x)
+	var bar_y: float = 605.0
+	draw_line(Vector2(start_x, bar_y), Vector2(pos.x, bar_y), Color("8fe8ff", 0.55), 2.0)
+	draw_circle(Vector2(pos.x, bar_y), 3.0, Color("8fe8ff", 0.85))
 
 # Version 0.8: Save only stable turn boundaries to avoid restoring half-resolved explosions.
 func _save_game(automatic: bool = false) -> void:
