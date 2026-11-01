@@ -13,6 +13,40 @@ func _draw() -> void:
         return
     var w: float = viewport_size.x
     var h: float = viewport_size.y
+    # Visible but transparent sci-fi sky treatment (no opaque gameplay overlay).
+    # Stronger than the original barely visible atmospheric pass.
+    draw_rect(Rect2(Vector2.ZERO, Vector2(w, h * 0.30)), Color(0.12, 0.06, 0.32, 0.18), true)
+    for glow in range(7, 0, -1):
+        var rr: float = h * (0.025 + float(glow) * 0.018)
+        draw_circle(Vector2(w * 0.80, h * 0.115), rr, Color(0.37, 0.16, 0.88, 0.014))
+    # Recognizable alien planet with a glowing ring.
+    var planet_center := Vector2(w * 0.80, h * 0.115)
+    var planet_radius: float = clampf(h * 0.047, 15.0, 55.0)
+    draw_circle(planet_center, planet_radius, Color(0.30, 0.48, 0.89, 0.44))
+    draw_circle(planet_center + Vector2(-planet_radius * 0.22, -planet_radius * 0.20), planet_radius * 0.73, Color(0.57, 0.71, 1.0, 0.21))
+    draw_arc(planet_center, planet_radius * 1.43, 0.18, PI * 1.82, 64, Color(0.72, 0.47, 1.0, 0.65), 2.4)
+    # Layered faraway alien ridges (visual only; no collisions).
+    for ridge_index in range(3):
+        var ridge_depth: float = float(ridge_index)
+        var ridge_points := PackedVector2Array()
+        var baseline: float = h * (0.245 + ridge_depth * 0.043)
+        ridge_points.append(Vector2(0.0, baseline))
+        for ridge_step in range(33):
+            var rx: float = w * float(ridge_step) / 32.0
+            var wave: float = float(ridge_step) * 0.48 + ridge_depth * 1.7
+            var ry: float = baseline - h * (0.022 + ridge_depth * 0.009) * (1.0 + sin(wave) * 0.6 + sin(wave * 2.1) * 0.25)
+            ridge_points.append(Vector2(rx, ry))
+        ridge_points.append(Vector2(w, baseline))
+        var ridge_color := Color(0.27 + ridge_depth * 0.045, 0.16 + ridge_depth * 0.035, 0.58 + ridge_depth * 0.025, 0.16)
+        draw_colored_polygon(ridge_points, ridge_color)
+        for ridge_step in range(32):
+            var ax: float = w * float(ridge_step) / 32.0
+            var bx: float = w * float(ridge_step + 1) / 32.0
+            var wave_a: float = float(ridge_step) * 0.48 + ridge_depth * 1.7
+            var wave_b: float = float(ridge_step + 1) * 0.48 + ridge_depth * 1.7
+            var ay: float = baseline - h * (0.022 + ridge_depth * 0.009) * (1.0 + sin(wave_a) * 0.6 + sin(wave_a * 2.1) * 0.25)
+            var by: float = baseline - h * (0.022 + ridge_depth * 0.009) * (1.0 + sin(wave_b) * 0.6 + sin(wave_b * 2.1) * 0.25)
+            draw_line(Vector2(ax, ay), Vector2(bx, by), Color(0.39, 0.77, 1.0, 0.24), 1.4)
     # Cinematic sci-fi celestial bodies, translucent to preserve game readability.
     var moon_pos := Vector2(w * 0.82, h * 0.105)
     for halo in range(7, 0, -1):
