@@ -139,26 +139,6 @@ func _build_ui() -> void:
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 10)
 	scroll.add_child(row)
-	var weapon := OptionButton.new()
-	weapon.custom_minimum_size = Vector2(135, 68)
-	for w in WEAPONS:
-		weapon.add_item(w)
-	weapon.item_selected.connect(_weapon_selected)
-	row.add_child(weapon)
-	controls["weapon"] = weapon
-	var angle := HSlider.new()
-	angle.min_value = 5
-	angle.max_value = 175
-	angle.value = 48
-	angle.step = 0.5
-	angle.custom_minimum_size = Vector2(175, 65)
-	angle.value_changed.connect(_angle_changed)
-	row.add_child(angle)
-	controls["angle"] = angle
-	var angle_label := Label.new()
-	angle_label.custom_minimum_size.x = 95
-	row.add_child(angle_label)
-	labels["angle"] = angle_label
 	var angle_minus := Button.new()
 	angle_minus.text = "−"
 	angle_minus.custom_minimum_size = Vector2(58, 65)
@@ -171,19 +151,6 @@ func _build_ui() -> void:
 	angle_plus.pressed.connect(func(): _nudge_aim("angle", 0.5))
 	row.add_child(angle_plus)
 	controls["angle_plus"] = angle_plus
-	var power := HSlider.new()
-	power.min_value = 15
-	power.max_value = 100
-	power.value = 72
-	power.step = 0.5
-	power.custom_minimum_size = Vector2(175, 65)
-	power.value_changed.connect(_power_changed)
-	row.add_child(power)
-	controls["power"] = power
-	var power_label := Label.new()
-	power_label.custom_minimum_size.x = 105
-	row.add_child(power_label)
-	labels["power"] = power_label
 	var power_minus := Button.new()
 	power_minus.text = "−"
 	power_minus.custom_minimum_size = Vector2(58, 65)
@@ -196,6 +163,39 @@ func _build_ui() -> void:
 	power_plus.pressed.connect(func(): _nudge_aim("power", 0.5))
 	row.add_child(power_plus)
 	controls["power_plus"] = power_plus
+	var weapon := OptionButton.new()
+	weapon.custom_minimum_size = Vector2(135, 68)
+	for w in WEAPONS:
+		weapon.add_item(w)
+	weapon.item_selected.connect(_weapon_selected)
+	row.add_child(weapon)
+	controls["weapon"] = weapon
+	var angle := HSlider.new()
+	angle.min_value = 5
+	angle.max_value = 175
+	angle.value = 48
+	angle.step = 0.5
+	angle.custom_minimum_size = Vector2(120, 65)
+	angle.value_changed.connect(_angle_changed)
+	row.add_child(angle)
+	controls["angle"] = angle
+	var angle_label := Label.new()
+	angle_label.custom_minimum_size.x = 112
+	row.add_child(angle_label)
+	labels["angle"] = angle_label
+	var power := HSlider.new()
+	power.min_value = 15
+	power.max_value = 100
+	power.value = 72
+	power.step = 0.5
+	power.custom_minimum_size = Vector2(120, 65)
+	power.value_changed.connect(_power_changed)
+	row.add_child(power)
+	controls["power"] = power
+	var power_label := Label.new()
+	power_label.custom_minimum_size.x = 112
+	row.add_child(power_label)
+	labels["power"] = power_label
 	var shop := Button.new()
 	shop.text = "SHOP"
 	shop.custom_minimum_size = Vector2(95, 65)
