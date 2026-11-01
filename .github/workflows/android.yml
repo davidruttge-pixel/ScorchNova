@@ -1,0 +1,50 @@
+name: Android APK
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/android.yml'
+      - 'ScorchNova_Android_GitHub_Upload_NEU.zip'
+permissions:
+  contents: read
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Unpack Godot project
+        run: |
+          unzip -q ScorchNova_Android_GitHub_Upload_NEU.zip -d extracted
+          cp -a extracted/ScorchNova_v1.0/. .
+          test -f project.godot
+      - name: Install Godot 4.3 and templates
+        run: |
+          curl -fL --retry 3 -o godot.zip https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_linux.x86_64.zip
+          unzip -q godot.zip
+          chmod +x Godot_v4.3-stable_linux.x86_64
+          mkdir -p "$HOME/.local/share/godot/export_templates/4.3.stable"
+          curl -fL --retry 3 -o templates.tpz https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_export_templates.tpz
+          unzip -q templates.tpz -d template_extract
+          cp -a template_extract/templates/. "$HOME/.local/share/godot/export_templates/4.3.stable/"
+      - name: Configure Android SDK and debug signing
+        run: |
+          echo "ANDROID_HOME=$ANDROID_HOME"
+          mkdir -p "$HOME/.android"
+          keytool -genkeypair -v -keystore "$HOME/.android/debug.keystore" -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+          echo "GODOT_ANDROID_KEYSTORE_DEBUG_PATH=$HOME/.android/debug.keystore" >> "$GITHUB_ENV"
+          echo "GODOT_ANDROID_KEYSTORE_DEBUG_USER=androiddebugkey" >> "$GITHUB_ENV"
+          echo "GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD=android" >> "$GITHUB_ENV"
+      - name: Import project
+        run: ./Godot_v4.3-stable_linux.x86_64 --headless --path . --editor --quit
+      - name: Build debug APK
+        run: |
+          mkdir -p build
+          ./Godot_v4.3-stable_linux.x86_64 --headless --path . --export-debug Android build/ScorchNova-debug.apk
+          test -s build/ScorchNova-debug.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ScorchNova-Android-APK
+          path: build/ScorchNova-debug.apk
+          if-no-files-found: error
