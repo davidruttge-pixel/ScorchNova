@@ -45,7 +45,8 @@ jobs:
       - name: Set Android export paths in Godot editor settings
         run: |
           SETTINGS="$HOME/.config/godot/editor_settings-4.tres"
-          test -f "$SETTINGS"
+          mkdir -p "$(dirname "$SETTINGS")"
+          if [ ! -f "$SETTINGS" ]; then printf '[gd_resource type="EditorSettings" format=3]\n\n[resource]\n' > "$SETTINGS"; fi
           printf '\nexport/android/android_sdk_path = "%s"\nexport/android/java_sdk_path = "%s"\n' "$ANDROID_HOME" "$JAVA_HOME" >> "$SETTINGS"
       - name: Build debug APK
         run: |
