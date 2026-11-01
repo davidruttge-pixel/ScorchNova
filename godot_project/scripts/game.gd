@@ -55,7 +55,60 @@ var touch_aim_enabled := true
 var touch_aim_dragging := false
 var touch_aim_index := -1
 var touch_aim_origin := Vector2.ZERO
+var touch_aim_enabled := true
+var touch_target := Vector2.ZERO
+var touch_target_timer := 0.0
 var ui_root: Control
+
+func _unhandled_input(event: InputEvent) -> void:
+	if not touch_aim_enabled or menu_open or game_over or phase != "aim" or players.is_empty() or players[current]["cpu"]:
+		return
+	if event is InputEventScreenTouch and event.pressed:
+		_touch_aim_at(event.position)
+	elif event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		_touch_aim_at(event.position)
+
+func _touch_aim_at(target: Vector2) -> void:
+	# Touch anywhere on the battlefield; the HUD and menus retain their own input.
+	if target.y < 112.0 or target.y > 580.0:
+		return
+	var origin: Vector2 = _tank_pos(current) + Vector2(0, -17)
+	var dx: float = target.x - origin.x
+	if absf(dx) < 12.0:
+		return
+	var direction: float = 1.0 if dx > 0.0 else -1.0
+	var best_error: float = INF
+	var best_angle: float = 48.0
+	var best_power: float = 72.0
+	# Solve the existing ballistic equations, including wind, without changing gameplay.
+	for angle_deg in range(8, 86, 2):
+		var radians: float = deg_to_rad(float(angle_deg))
+		for power_percent in range(15, 101, 3):
+			var speed: float = float(power_percent) * 6.3
+			var vx: float = cos(radians) * speed * direction
+			var vy: float = -sin(radians) * speed
+			var ax: float = wind * 0.45
+			var time: float = absf(dx) / maxf(absf(vx), 1.0)
+			for iteration in range(3):
+				var diff: float = vx * time + 0.5 * ax * time * time - dx
+				var slope: float = vx + ax * time
+				if absf(slope) > 0.01:
+					time = clampf(time - diff / slope, 0.0, 15.0)
+			var estimated_y: float = origin.y + vy * time + 0.5 * GRAVITY * time * time
+			var error: float = absf(estimated_y - target.y) + absf(vx * time + 0.5 * ax * time * time - dx) * 2.0
+			if error < best_error:
+				best_error = error
+				best_angle = float(angle_deg)
+				best_power = float(power_percent)
+	shot_direction = direction
+	controls["direction"].text = "RICHTUNG: " + (">" if direction > 0.0 else "<")
+	players[current]["angle"] = best_angle
+	players[current]["power"] = best_power
+	touch_target = target
+	touch_target_timer = 1.3
+	status = "TOUCH-ZIEL: Winkel %.1f°  |  Kraft %.1f%%" % [best_angle, best_power]
+	_refresh_ui()
+	queue_redraw()
 
 func _ready() -> void:
 	rng.randomize()
@@ -592,6 +645,7 @@ func _fire() -> void:
 
 func _physics_process(delta: float) -> void:
 	visual_clock += delta
+	touch_target_timer = maxf(0.0, touch_target_timer - delta)
 	visual_muzzle_time = maxf(0.0, visual_muzzle_time - delta)
 	if menu_open:
 		return
@@ -889,6 +943,11 @@ func _draw() -> void:
 		poly.append(Vector2(1280, 615))
 		draw_colored_polygon(poly, Color("24264e").lerp(Color("3b315c"), layer * 0.25))
 	terrain.draw_terrain(self)
+	if touch_target_timer > 0.0:
+		var alpha: float = minf(1.0, touch_target_timer)
+		draw_arc(touch_target, 19.0, 0.0, TAU, 36, Color(0.3, 1.0, 0.85, alpha), 3.0)
+		draw_line(touch_target + Vector2(-26, 0), touch_target + Vector2(26, 0), Color(0.3, 1.0, 0.85, alpha), 2.0)
+		draw_line(touch_target + Vector2(0, -26), touch_target + Vector2(0, 26), Color(0.3, 1.0, 0.85, alpha), 2.0)
 	for i in range(players.size()):
 		_draw_tank(i)
 	if phase == "aim" and not game_over and not players[current]["cpu"]:
