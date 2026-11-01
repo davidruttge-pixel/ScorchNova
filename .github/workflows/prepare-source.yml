@@ -1,0 +1,31 @@
+name: Prepare ScorchNova editable source
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/prepare-source.yml'
+permissions:
+  contents: write
+jobs:
+  extract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - name: Unpack Godot source into editable folder
+        run: |
+          mkdir -p .source-unpack godot_project
+          unzip -q ScorchNova_Android_GitHub_Upload_NEU.zip -d .source-unpack
+          test -f .source-unpack/ScorchNova_v1.0/project.godot
+          cp -a .source-unpack/ScorchNova_v1.0/. godot_project/
+          rm -rf .source-unpack godot_project/.godot
+          find godot_project -type f -size +20M -print -delete
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add godot_project
+          if ! git diff --cached --quiet; then
+            git commit -m "Expose original Godot source for safe cartoon terrain upgrades"
+            git push
+          fi
