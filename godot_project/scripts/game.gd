@@ -760,7 +760,24 @@ func _ai_fire() -> void:
 	_fire()
 
 func _draw() -> void:
-	draw_rect(Rect2(0, 0, W, H), Color("10142c"))
+	draw_rect(Rect2(0, 0, W, H), Color("171348"))
+	# Native cartoon sky behind tanks, terrain and all interface controls.
+	for band in range(10):
+		var y: float = float(band) * 45.0
+		draw_rect(Rect2(0, y, W, 47.0), Color("39218a").lerp(Color("b64cd0"), float(band) / 14.0))
+	var planet_center := Vector2(975, 174)
+	for glow in range(6, 0, -1):
+		draw_circle(planet_center, 55.0 + float(glow) * 13.0, Color(0.68, 0.31, 0.96, 0.018))
+	draw_circle(planet_center, 62.0, Color("3925a1"))
+	draw_circle(planet_center + Vector2(-11, -11), 49.0, Color("8855d5"))
+	draw_arc(planet_center, 83.0, 0.0, TAU, 72, Color("e07dff"), 7.0)
+	# Rounded cloud clusters in the background only.
+	for cloud in range(7):
+		var cx: float = float(cloud * 197 + 42)
+		var cy: float = 150.0 + float(cloud % 3) * 45.0
+		for puff in range(5):
+			draw_circle(Vector2(cx + float(puff - 2) * 19.0, cy), 25.0 + float(puff % 2) * 6.0, Color("d886f0"))
+
 	for s in stars:
 		draw_circle(s, 1.4, Color("c9d5f7", 0.7))
 	for layer in range(3):
