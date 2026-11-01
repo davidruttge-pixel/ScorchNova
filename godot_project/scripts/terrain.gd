@@ -42,7 +42,7 @@ func draw_terrain(canvas: CanvasItem) -> void:
 	# Cartoon terrain uses the existing mutable heightmap. All physics remains untouched.
 	var outline := PackedVector2Array()
 	outline.append(Vector2(0, FLOOR))
-	for x in range(0, WIDTH + 1, 4):
+	for x in range(0, WIDTH + 1, 8):
 		outline.append(Vector2(x, height_at(x)))
 	outline.append(Vector2(WIDTH, FLOOR))
 	canvas.draw_colored_polygon(outline, Color("9d4b2d"))
@@ -52,7 +52,7 @@ func draw_terrain(canvas: CanvasItem) -> void:
 	for band in range(3):
 		var offset: float = 20.0 + float(band) * 43.0
 		var band_poly := PackedVector2Array()
-		for x in range(0, WIDTH + 1, 4):
+		for x in range(0, WIDTH + 1, 8):
 			band_poly.append(Vector2(x, minf(float(FLOOR), height_at(x) + offset)))
 		band_poly.append(Vector2(WIDTH, FLOOR))
 		band_poly.append(Vector2(0, FLOOR))
@@ -64,25 +64,24 @@ func draw_terrain(canvas: CanvasItem) -> void:
 		canvas.draw_colored_polygon(band_poly, shade)
 
 	# Fine contour highlights and shaded grass lip.
-	for x in range(0, WIDTH, 4):
+	for x in range(0, WIDTH, 8):
 		var p := Vector2(x, height_at(x))
-		var q := Vector2(x + 4, height_at(x + 4))
+		var q := Vector2(x + 8, height_at(x + 8))
 		canvas.draw_line(p + Vector2(0, 5), q + Vector2(0, 5), Color("285d29"), 9.0, true)
 		canvas.draw_line(p, q, Color("9df12d"), 7.0, true)
 		canvas.draw_line(p + Vector2(0, -2), q + Vector2(0, -2), Color("d5ff64"), 2.0, true)
 
 	# Deterministic pebbles and small soil texture marks; no random flicker.
-	for i in range(115):
+	for i in range(65):
 		var sx: float = float((i * 173 + 59) % WIDTH)
 		var sy: float = height_at(sx) + 15.0 + float((i * 37) % 155)
 		if sy > FLOOR - 8.0:
 			continue
 		var stone_radius: float = 1.7 + float(i % 4) * 0.8
 		canvas.draw_circle(Vector2(sx, sy), stone_radius, Color("663747") if i % 3 == 0 else Color("e58b42"))
-		canvas.draw_arc(Vector2(sx - 0.4, sy - 0.5), stone_radius, PI, TAU, 8, Color("f7b45d"), 1.0)
 
 	# Small grass tufts attached to the changing terrain silhouette.
-	for i in range(45):
+	for i in range(30):
 		var gx: float = float((i * 109 + 23) % WIDTH)
 		var gy: float = height_at(gx)
 		var tuft: float = 5.0 + float(i % 4) * 2.0
