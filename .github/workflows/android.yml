@@ -31,10 +31,16 @@ jobs:
           curl -fL --retry 3 -o templates.tpz https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_export_templates.tpz
           unzip -q templates.tpz -d template_extract
           cp -a template_extract/templates/. "$HOME/.local/share/godot/export_templates/4.3.stable/"
+      - name: Use Java 17 for Godot Android export
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
       - name: Configure Android SDK and debug signing
         run: |
           echo "ANDROID_HOME=$ANDROID_HOME"
           echo "JAVA_HOME=$JAVA_HOME"
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install "platforms;android-34" "build-tools;34.0.0" "platform-tools"
           mkdir -p "$HOME/.android"
           keytool -genkeypair -v -keystore "$HOME/.android/debug.keystore" -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
           echo "GODOT_ANDROID_KEYSTORE_DEBUG_PATH=$HOME/.android/debug.keystore" >> "$GITHUB_ENV"
