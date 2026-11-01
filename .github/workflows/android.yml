@@ -40,7 +40,7 @@ jobs:
         run: |
           echo "ANDROID_HOME=$ANDROID_HOME"
           echo "JAVA_HOME=$JAVA_HOME"
-          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install "platforms;android-34" "build-tools;34.0.0" "platform-tools"
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install "platforms;android-34" "platforms;android-35" "build-tools;34.0.0" "build-tools;35.0.0" "platform-tools"
           mkdir -p "$HOME/.android"
           keytool -genkeypair -v -keystore "$HOME/.android/debug.keystore" -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
           echo "GODOT_ANDROID_KEYSTORE_DEBUG_PATH=$HOME/.android/debug.keystore" >> "$GITHUB_ENV"
@@ -53,6 +53,7 @@ jobs:
           import re
           p = Path("export_presets.cfg")
           s = p.read_text()
+          s = s.replace("package/signed=true", "package/signed=false")
           assert '[preset.0.options]' in s and 'platform="Android"' in s
           options = {
               "keystore/debug": str(Path.home() / ".android/debug.keystore"),
@@ -67,7 +68,7 @@ jobs:
               else:
                   s += '\n' + entry
           p.write_text(s)
-          print("Explicit Android debug signing configured")
+          print("Debug signing configured; release signing disabled")
           PY
       - name: Import project
         run: ./Godot_v4.3-stable_linux.x86_64 --headless --path . --editor --quit
@@ -91,6 +92,7 @@ jobs:
           test -s "$HOME/.android/debug.keystore"
           test -f "$ANDROID_HOME/platforms/android-34/android.jar"
           test -f "$ANDROID_HOME/build-tools/34.0.0/aapt2"
+          test -f "$ANDROID_HOME/build-tools/35.0.0/aapt2"
           test -f "$HOME/.local/share/godot/export_templates/4.3.stable/android_debug.apk"
           echo "Editor settings path: $SETTINGS"
           cat "$SETTINGS"
