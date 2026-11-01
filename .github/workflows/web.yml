@@ -89,6 +89,13 @@ jobs:
           mkdir -p web
           ./Godot_v4.3-stable_linux.x86_64 --headless --verbose --path . --export-debug Web web/index.html
           test -s web/index.html
+          # Publish a fresh standalone path to bypass stale mobile browser caches.
+          mkdir -p web/zebra
+          cp web/index.* web/zebra/
+          test -s web/zebra/index.pck
+          test -s web/zebra/index.html
+          grep -q 'ZEBRA EDITION' scripts/game.gd
+
           # Native Godot visuals replace the previous HTML overlay.
       - uses: actions/upload-artifact@v4
         with:
