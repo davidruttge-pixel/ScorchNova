@@ -116,55 +116,59 @@ func _build_ui() -> void:
 	_apply_ui_theme(root)
 	var top := PanelContainer.new()
 	top.position = Vector2(12, 10)
-	top.size = Vector2(1252, 78)
+	top.size = Vector2(1252, 92)
 	root.add_child(top)
 	var info := HBoxContainer.new()
 	info.add_theme_constant_override("separation", 20)
 	top.add_child(info)
 	for key in ["p1", "round", "wind", "p2"]:
 		var label := Label.new()
-		label.add_theme_font_size_override("font_size", 23)
+		label.add_theme_font_size_override("font_size", 27)
 		label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		info.add_child(label)
 		labels[key] = label
 	var bottom := PanelContainer.new()
-	bottom.position = Vector2(12, 618)
-	bottom.size = Vector2(1256, 91)
+	bottom.position = Vector2(12, 590)
+	bottom.size = Vector2(1256, 119)
 	root.add_child(bottom)
 	var scroll := ScrollContainer.new()
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
 	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	bottom.add_child(scroll)
 	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 10)
+	row.add_theme_constant_override("separation", 14)
 	scroll.add_child(row)
 	var angle_minus := Button.new()
 	angle_minus.text = "−"
-	angle_minus.custom_minimum_size = Vector2(58, 65)
+	angle_minus.custom_minimum_size = Vector2(82, 94)
+	angle_minus.add_theme_font_size_override("font_size", 35)
 	angle_minus.pressed.connect(func(): _nudge_aim("angle", -0.5))
 	row.add_child(angle_minus)
 	controls["angle_minus"] = angle_minus
 	var angle_plus := Button.new()
 	angle_plus.text = "+"
-	angle_plus.custom_minimum_size = Vector2(58, 65)
+	angle_plus.custom_minimum_size = Vector2(82, 94)
+	angle_plus.add_theme_font_size_override("font_size", 35)
 	angle_plus.pressed.connect(func(): _nudge_aim("angle", 0.5))
 	row.add_child(angle_plus)
 	controls["angle_plus"] = angle_plus
 	var power_minus := Button.new()
 	power_minus.text = "−"
-	power_minus.custom_minimum_size = Vector2(58, 65)
+	power_minus.custom_minimum_size = Vector2(82, 94)
+	power_minus.add_theme_font_size_override("font_size", 35)
 	power_minus.pressed.connect(func(): _nudge_aim("power", -0.5))
 	row.add_child(power_minus)
 	controls["power_minus"] = power_minus
 	var power_plus := Button.new()
 	power_plus.text = "+"
-	power_plus.custom_minimum_size = Vector2(58, 65)
+	power_plus.custom_minimum_size = Vector2(82, 94)
+	power_plus.add_theme_font_size_override("font_size", 35)
 	power_plus.pressed.connect(func(): _nudge_aim("power", 0.5))
 	row.add_child(power_plus)
 	controls["power_plus"] = power_plus
 	var weapon := OptionButton.new()
-	weapon.custom_minimum_size = Vector2(135, 68)
+	weapon.custom_minimum_size = Vector2(160, 94)
 	for w in WEAPONS:
 		weapon.add_item(w)
 	weapon.item_selected.connect(_weapon_selected)
@@ -175,7 +179,7 @@ func _build_ui() -> void:
 	angle.max_value = 175
 	angle.value = 48
 	angle.step = 0.5
-	angle.custom_minimum_size = Vector2(120, 65)
+	angle.custom_minimum_size = Vector2(145, 94)
 	angle.value_changed.connect(_angle_changed)
 	row.add_child(angle)
 	controls["angle"] = angle
@@ -188,7 +192,7 @@ func _build_ui() -> void:
 	power.max_value = 100
 	power.value = 72
 	power.step = 0.5
-	power.custom_minimum_size = Vector2(120, 65)
+	power.custom_minimum_size = Vector2(145, 94)
 	power.value_changed.connect(_power_changed)
 	row.add_child(power)
 	controls["power"] = power
@@ -198,41 +202,42 @@ func _build_ui() -> void:
 	labels["power"] = power_label
 	var shop := Button.new()
 	shop.text = "SHOP"
-	shop.custom_minimum_size = Vector2(95, 65)
+	shop.custom_minimum_size = Vector2(120, 94)
 	shop.pressed.connect(_shop_pressed)
 	row.add_child(shop)
 	controls["shop"] = shop
 	var direction_button := Button.new()
 	direction_button.text = "RICHTUNG: >"
-	direction_button.custom_minimum_size = Vector2(115, 65)
+	direction_button.custom_minimum_size = Vector2(150, 94)
 	direction_button.pressed.connect(_toggle_direction)
 	row.add_child(direction_button)
 	controls["direction"] = direction_button
 	var fire := Button.new()
 	fire.text = "FEUER!"
-	fire.custom_minimum_size = Vector2(120, 65)
+	fire.add_theme_font_size_override("font_size", 28)
+	fire.custom_minimum_size = Vector2(160, 94)
 	fire.pressed.connect(_fire)
 	row.add_child(fire)
 	controls["fire"] = fire
 	var menu_button := Button.new()
 	menu_button.text = "MENÜ"
-	menu_button.custom_minimum_size = Vector2(105, 65)
+	menu_button.custom_minimum_size = Vector2(125, 94)
 	menu_button.pressed.connect(_show_menu)
 	row.add_child(menu_button)
 	var restart := Button.new()
 	restart.text = "NEU"
-	restart.custom_minimum_size = Vector2(85, 65)
+	restart.custom_minimum_size = Vector2(105, 94)
 	restart.pressed.connect(_new_game)
 	row.add_child(restart)
 	var difficulty_button := Button.new()
 	difficulty_button.text = "KI: NORMAL"
-	difficulty_button.custom_minimum_size = Vector2(115, 65)
+	difficulty_button.custom_minimum_size = Vector2(140, 94)
 	difficulty_button.pressed.connect(_cycle_difficulty)
 	row.add_child(difficulty_button)
 	controls["difficulty"] = difficulty_button
 	var count_button := Button.new()
 	count_button.text = "2 SPIELER"
-	count_button.custom_minimum_size = Vector2(90, 65)
+	count_button.custom_minimum_size = Vector2(115, 94)
 	count_button.pressed.connect(_cycle_player_count)
 	row.add_child(count_button)
 	controls["count"] = count_button
