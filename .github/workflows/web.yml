@@ -89,6 +89,22 @@ jobs:
           mkdir -p web
           ./Godot_v4.3-stable_linux.x86_64 --headless --verbose --path . --export-debug Web web/index.html
           test -s web/index.html
+          # Version the exported pack to prevent stale Godot resources on mobile.
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          html = Path("web/index.html")
+          body = html.read_text()
+          pack = Path("web/index.pck")
+          assert pack.exists(), "Godot export pack missing"
+          version = "zebra-b34a2da"
+          new_pack = f"scorchnova-{version}.pck"
+          pack.rename(Path("web") / new_pack)
+          body = body.replace('"index.pck"', f'"{new_pack}"')
+          body = body.replace("'index.pck'", f"'{new_pack}'")
+          html.write_text(body)
+          assert new_pack in html.read_text(), "Pack URL not updated"
+          PY
           # Native Godot visuals replace the previous HTML overlay.
       - uses: actions/upload-artifact@v4
         with:
