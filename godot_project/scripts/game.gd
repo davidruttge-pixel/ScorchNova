@@ -159,6 +159,18 @@ func _build_ui() -> void:
 	angle_label.custom_minimum_size.x = 95
 	row.add_child(angle_label)
 	labels["angle"] = angle_label
+	var angle_minus := Button.new()
+	angle_minus.text = "−"
+	angle_minus.custom_minimum_size = Vector2(58, 65)
+	angle_minus.pressed.connect(func(): _nudge_aim("angle", -0.5))
+	row.add_child(angle_minus)
+	controls["angle_minus"] = angle_minus
+	var angle_plus := Button.new()
+	angle_plus.text = "+"
+	angle_plus.custom_minimum_size = Vector2(58, 65)
+	angle_plus.pressed.connect(func(): _nudge_aim("angle", 0.5))
+	row.add_child(angle_plus)
+	controls["angle_plus"] = angle_plus
 	var power := HSlider.new()
 	power.min_value = 15
 	power.max_value = 100
@@ -172,6 +184,18 @@ func _build_ui() -> void:
 	power_label.custom_minimum_size.x = 105
 	row.add_child(power_label)
 	labels["power"] = power_label
+	var power_minus := Button.new()
+	power_minus.text = "−"
+	power_minus.custom_minimum_size = Vector2(58, 65)
+	power_minus.pressed.connect(func(): _nudge_aim("power", -0.5))
+	row.add_child(power_minus)
+	controls["power_minus"] = power_minus
+	var power_plus := Button.new()
+	power_plus.text = "+"
+	power_plus.custom_minimum_size = Vector2(58, 65)
+	power_plus.pressed.connect(func(): _nudge_aim("power", 0.5))
+	row.add_child(power_plus)
+	controls["power_plus"] = power_plus
 	var shop := Button.new()
 	shop.text = "SHOP"
 	shop.custom_minimum_size = Vector2(95, 65)
@@ -365,7 +389,7 @@ func _refresh_ui() -> void:
 	labels["angle"].text = "Winkel %.1f°" % float(p["angle"])
 	labels["power"].text = "Kraft %.1f%%" % float(p["power"])
 	var enabled := not p["cpu"] and phase == "aim" and not game_over
-	for key in ["angle", "power", "weapon", "shop", "fire", "direction"]:
+	for key in ["angle", "power", "angle_minus", "angle_plus", "power_minus", "power_plus", "weapon", "shop", "fire", "direction"]:
 		controls[key].disabled = not enabled
 	controls["difficulty"].text = "KI: " + ["LEICHT", "NORMAL", "SCHWER"][ai_difficulty]
 	controls["direction"].text = "RICHTUNG: " + (">" if shot_direction > 0 else "<")
@@ -413,6 +437,12 @@ func _cycle_rules() -> void:
 func _weapon_selected(idx: int) -> void:
 	players[current]["weapon"] = idx
 	_refresh_ui()
+
+func _nudge_aim(setting: String, change: float) -> void:
+	if players.is_empty() or phase != "aim" or game_over or players[current]["cpu"]:
+		return
+	var slider: HSlider = controls[setting]
+	slider.value = clampf(slider.value + change, slider.min_value, slider.max_value)
 
 func _angle_changed(value: float) -> void:
 	players[current]["angle"] = value
