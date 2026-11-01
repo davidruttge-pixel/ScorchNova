@@ -90,6 +90,18 @@ jobs:
           test -s "$HOME/.android/debug.keystore"
           test -f "$ANDROID_HOME/platforms/android-34/android.jar"
           test -f "$HOME/.local/share/godot/export_templates/4.3.stable/android_debug.apk"
+      - name: Diagnose loaded Godot Android SDK settings
+        run: |
+          cat > /tmp/scorchnova_diagnose.gd <<'EOF'
+          extends SceneTree
+
+          func _initialize() -> void:
+              var settings = EditorInterface.get_editor_settings()
+              for key in ["export/android/android_sdk_path", "export/android/java_sdk_path", "export/android/debug_keystore", "export/android/debug_keystore_user"]:
+                  print("SDK_DIAG: ", key, " present=", settings.has_setting(key), " value=", str(settings.get_setting(key)) if settings.has_setting(key) else "MISSING")
+              quit()
+          EOF
+          ./Godot_v4.3-stable_linux.x86_64 --headless --editor --path . --script /tmp/scorchnova_diagnose.gd
       - name: Build debug APK
         run: |
           mkdir -p build
