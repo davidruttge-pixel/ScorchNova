@@ -807,64 +807,62 @@ func _draw_tank(i: int) -> void:
 	var p: Dictionary = players[i]
 	if p["hp"] <= 0:
 		return
-	var pos := _tank_pos(i)
-	var c: Color = p["color"]
-	# Chunky outlined cartoon tracks and highlighted wheels.
-	draw_rect(Rect2(pos + Vector2(-25, -2), Vector2(50, 15)), Color("182039"))
-	draw_rect(Rect2(pos + Vector2(-22, 0), Vector2(44, 11)), c.darkened(0.52))
-	for wheel_x in [-17, -6, 5, 16]:
-		draw_circle(pos + Vector2(wheel_x, 6), 5.3, Color("12182b"))
-		draw_circle(pos + Vector2(wheel_x, 6), 3.4, Color("93a7be"))
-		draw_circle(pos + Vector2(wheel_x - 1, 5), 1.3, Color("d9eaff"))
-	# Sloped hull with thick comic outline.
-	var hull := PackedVector2Array([
-		pos + Vector2(-22, -2), pos + Vector2(-17, -15),
-		pos + Vector2(14, -15), pos + Vector2(22, -2)
-	])
-	draw_colored_polygon(hull, Color("15223b"))
-	var hull_inner := PackedVector2Array([
-		pos + Vector2(-19, -3), pos + Vector2(-14, -12),
-		pos + Vector2(12, -12), pos + Vector2(19, -3)
-	])
-	draw_colored_polygon(hull_inner, c)
-	draw_line(pos + Vector2(-12, -11), pos + Vector2(10, -11), c.lightened(0.5), 2.5, true)
-	# Turret, hatch and gun remain anchored to the original firing position.
-	draw_circle(pos + Vector2(0, -14), 11, Color("15223b"))
-	draw_circle(pos + Vector2(0, -14), 8.5, c.lightened(0.2))
-	draw_arc(pos + Vector2(-2, -16), 5.0, PI * 1.05, PI * 1.85, 12, Color("f2f7ff", 0.7), 2.0)
-	draw_rect(Rect2(pos + Vector2(-5, -26), Vector2(10, 4)), Color("17223b"))
-	draw_rect(Rect2(pos + Vector2(-3, -25), Vector2(6, 2)), c.lightened(0.55))
-	var dir := 1.0 if i < players.size() / 2.0 else -1.0
-	var a := deg_to_rad(float(p["angle"]))
-	var start := pos + Vector2(0, -13)
-	var end := start + Vector2(dir * cos(a), -sin(a)) * 30
-	draw_line(start, end, Color("17223b"), 10.0, true)
-	draw_line(start, end, c.lightened(0.25), 6.5, true)
-	draw_circle(end, 4.3, Color("17223b"))
-	draw_circle(end, 2.5, Color("a6b8cb"))
-	# Zebra mascot drawn in game coordinates, independent of gameplay physics.
-	var head: Vector2 = pos + Vector2(-4, -48)
-	draw_circle(head + Vector2(-7, -9), 5.0, Color("19182a"))
-	draw_circle(head + Vector2(6, -9), 5.0, Color("19182a"))
-	draw_circle(head + Vector2(-7, -9), 3.4, Color("fff8ef"))
-	draw_circle(head + Vector2(6, -9), 3.4, Color("fff8ef"))
-	draw_circle(head, 17.5, Color("171725"))
-	draw_circle(head, 15.4, Color("fff9f0"))
+	var pos: Vector2 = _tank_pos(i)
+	var accent: Color = p["color"]
+	var facing: float = 1.0 if i < players.size() / 2.0 else -1.0
+	var ink := Color("171725")
+	var white := Color("fff9ee")
+	# Four legs and hooves. Only visuals change; original collision and aim stay intact.
+	for leg_x in [-18.0, -8.0, 10.0, 20.0]:
+		var foot := pos + Vector2(leg_x, -2)
+		draw_line(foot + Vector2(0, -25), foot, ink, 11.0, true)
+		draw_line(foot + Vector2(0, -25), foot + Vector2(0, -4), white, 7.0, true)
+		draw_line(foot + Vector2(-4, -15), foot + Vector2(4, -11), ink, 3.0, true)
+		draw_rect(Rect2(foot + Vector2(-6, -4), Vector2(12, 6)), ink)
+	# Tail and rounded striped body.
+	draw_line(pos + Vector2(-25 * facing, -36), pos + Vector2(-36 * facing, -24), ink, 5.0, true)
+	draw_circle(pos + Vector2(-37 * facing, -23), 4.0, ink)
+	draw_circle(pos + Vector2(0, -35), 27.0, ink)
+	draw_circle(pos + Vector2(0, -35), 24.0, white)
+	for stripe in range(5):
+		var stripe_x: float = -18.0 + float(stripe) * 9.0
+		draw_line(pos + Vector2(stripe_x, -54), pos + Vector2(stripe_x + 5, -39), ink, 4.0, true)
+		draw_line(pos + Vector2(stripe_x + 5, -39), pos + Vector2(stripe_x + 2, -29), ink, 2.5, true)
+	# Neck, mane and head.
+	var neck := pos + Vector2(18 * facing, -59)
+	draw_line(pos + Vector2(15 * facing, -38), neck, ink, 19.0, true)
+	draw_line(pos + Vector2(15 * facing, -38), neck, white, 14.0, true)
+	for spike in range(5):
+		var mane_y: float = -66.0 + float(spike) * 8.0
+		draw_line(pos + Vector2(8 * facing, mane_y), pos + Vector2(15 * facing, mane_y + 5), ink, 5.0, true)
+	var head := pos + Vector2(22 * facing, -73)
+	draw_circle(head + Vector2(-9 * facing, -16), 8.0, ink)
+	draw_circle(head + Vector2(8 * facing, -17), 8.0, ink)
+	draw_circle(head + Vector2(-9 * facing, -16), 5.0, Color("f5b6c6"))
+	draw_circle(head + Vector2(8 * facing, -17), 5.0, Color("f5b6c6"))
+	draw_circle(head, 20.0, ink)
+	draw_circle(head, 17.0, white)
 	for stripe in range(3):
-		var stripe_x: float = -7.0 + float(stripe) * 5.0
-		draw_line(head + Vector2(stripe_x, -8), head + Vector2(stripe_x + 3.0, -2), Color("242332"), 2.3, true)
-	draw_circle(head + Vector2(10, 7), 9.0, Color("22202e"))
-	draw_circle(head + Vector2(10, 7), 7.2, Color("b9b1bc"))
-	draw_circle(head + Vector2(5, 3), 1.0, Color("27222b"))
-	draw_circle(head + Vector2(9, 3), 1.0, Color("27222b"))
-	draw_circle(head + Vector2(-3, -2), 2.7, Color("1b1b29"))
-	draw_circle(head + Vector2(-2.4, -2.6), 0.9, Color.WHITE)
-	draw_arc(head + Vector2(-3, -3), 4.5, 0.0, TAU, 18, c.lightened(0.3), 2.0)
+		var stripe_y: float = -14.0 + float(stripe) * 8.0
+		draw_line(head + Vector2(-11 * facing, stripe_y), head + Vector2(-2 * facing, stripe_y + 4), ink, 3.0, true)
+	var muzzle := head + Vector2(17 * facing, 10)
+	draw_circle(muzzle, 12.0, ink)
+	draw_circle(muzzle, 9.5, Color("bcb1bd"))
+	draw_circle(muzzle + Vector2(3 * facing, -2), 2.0, ink)
+	draw_circle(head + Vector2(6 * facing, -4), 4.0, ink)
+	draw_circle(head + Vector2(7 * facing, -5), 1.4, white)
+	# Goggles and accent-color strap distinguish the players.
+	draw_line(head + Vector2(-15 * facing, -10), head + Vector2(10 * facing, -12), accent, 3.0, true)
+	draw_arc(head + Vector2(5 * facing, -10), 7.0, 0.0, TAU, 24, ink, 4.0)
+	draw_arc(head + Vector2(5 * facing, -10), 6.0, 0.0, TAU, 24, accent.lightened(0.35), 3.0)
+	# The invisible original cannon still determines the actual shot direction.
+	# A small sparkle indicates the aiming point without displaying a tank.
 	if p["shield"] > 0:
-		draw_arc(pos + Vector2(0, -6), 31, PI, TAU, 40, Color("7cecff", 0.75), 3)
-	var bar := Rect2(pos + Vector2(-23, -43), Vector2(46, 5))
-	draw_rect(bar, Color("4d2038"))
-	draw_rect(Rect2(bar.position, Vector2(46 * float(p["hp"]) / 100.0, 5)), Color("74e3a4"))
+		draw_arc(pos + Vector2(0, -39), 52.0, PI, TAU, 40, Color("7cecff", 0.75), 3.0)
+	var bar := Rect2(pos + Vector2(-27, -111), Vector2(54, 7))
+	draw_rect(bar.grow(2), ink)
+	draw_rect(bar, Color("68243f"))
+	draw_rect(Rect2(bar.position, Vector2(54.0 * float(p["hp"]) / 100.0, 7)), Color("66f43f"))
 
 func _draw_trajectory() -> void:
 	var p: Dictionary = players[current]
