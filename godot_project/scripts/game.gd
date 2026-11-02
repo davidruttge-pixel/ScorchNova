@@ -723,6 +723,24 @@ func _build_main_menu(root: Control) -> void:
 		world_grid.add_child(world_button)
 		controls["world_button_%d" % world_ids[i]] = world_button
 	_update_menu_world_buttons()
+	var roster_title := Label.new()
+	roster_title.text = "MIT SPIELERN SPIELEN"
+	roster_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	column.add_child(roster_title)
+	var roster_buttons := HBoxContainer.new()
+	roster_buttons.add_theme_constant_override("separation", 6)
+	column.add_child(roster_buttons)
+	for config in [{"text": "+ MENSCH", "delta": 1, "cpu": false}, {"text": "+ KI", "delta": 1, "cpu": true}, {"text": "− MENSCH", "delta": -1, "cpu": false}, {"text": "− KI", "delta": -1, "cpu": true}]:
+		var roster_button := Button.new()
+		roster_button.text = str(config["text"])
+		roster_button.custom_minimum_size = Vector2(113, 46)
+		roster_button.pressed.connect(_change_menu_roster.bind(int(config["delta"]), bool(config["cpu"])))
+		roster_buttons.add_child(roster_button)
+	var roster_info := Label.new()
+	roster_info.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	column.add_child(roster_info)
+	controls["roster_info"] = roster_info
+	_update_roster_info()
 	var names_label := Label.new()
 	names_label.text = "SPIELERNAMEN (MENSCHEN)"
 	names_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -761,6 +779,32 @@ func _build_main_menu(root: Control) -> void:
 	column.add_child(scoreboard)
 	labels["scoreboard"] = scoreboard
 	controls["menu"] = overlay
+
+func _update_roster_info() -> void:
+	if controls.has("roster_info"):
+		controls["roster_info"].text = "%d Menschen  +  %d KI  =  %d Spieler (max. 10)" % [player_count - cpu_count, cpu_count, player_count]
+
+func _change_menu_roster(delta: int, is_cpu: bool) -> void:
+	var humans: int = player_count - cpu_count
+	if delta > 0:
+		if player_count >= 10:
+			return
+		if is_cpu:
+			cpu_count += 1
+		else:
+			humans += 1
+		player_count += 1
+	else:
+		if is_cpu:
+			if cpu_count <= 0 or player_count <= 2:
+				return
+			cpu_count -= 1
+		else:
+			if humans <= 1 or player_count <= 2:
+				return
+		player_count -= 1
+	_update_roster_info()
+	_rebuild_name_inputs()
 
 func _show_menu() -> void:
 	menu_open = true
