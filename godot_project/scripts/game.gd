@@ -472,7 +472,7 @@ func _build_ui() -> void:
 	extras_popup.add_child(extras_scroll)
 	var extras_column := VBoxContainer.new()
 	extras_column.custom_minimum_size.x = 385
-	extras_column.add_theme_constant_override("separation", 9)
+	extras_column.add_theme_constant_override("separation", 5)
 	extras_scroll.add_child(extras_column)
 	var extras_button := Button.new()
 	extras_button.text = "EXTRAS"
@@ -585,18 +585,38 @@ func _build_main_menu(root: Control) -> void:
 	var heading := Label.new()
 	heading.text = "SCORCHED ZEBRA"
 	heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	heading.add_theme_font_size_override("font_size", 43)
+	heading.add_theme_font_size_override("font_size", 37)
 	column.add_child(heading)
 	var subtitle := Label.new()
 	subtitle.text = "COMIC ARTILLERIE  •  ZEBRA DUELL"
 	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	column.add_child(subtitle)
+	var world_title := Label.new()
+	world_title.text = "WÄHLE DEINE LANDSCHAFT"
+	world_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	column.add_child(world_title)
+	var world_grid := GridContainer.new()
+	world_grid.columns = 3
+	world_grid.add_theme_constant_override("h_separation", 6)
+	world_grid.add_theme_constant_override("v_separation", 6)
+	column.add_child(world_grid)
+	var world_ids := [0, 4, 5, 6, 7]
+	var world_names := ["🌌 COMIC", "🐸 FROSCH", "🏜 WÜSTE & SCHNEE", "🏝 INSEL", "🌋 VULKAN"]
+	for i in range(world_ids.size()):
+		var world_button := Button.new()
+		world_button.text = world_names[i]
+		world_button.toggle_mode = true
+		world_button.custom_minimum_size = Vector2(151, 49)
+		world_button.pressed.connect(_select_menu_world.bind(world_ids[i]))
+		world_grid.add_child(world_button)
+		controls["world_button_%d" % world_ids[i]] = world_button
+	_update_menu_world_buttons()
 	var names_label := Label.new()
 	names_label.text = "SPIELERNAMEN (MENSCHEN)"
 	names_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	column.add_child(names_label)
 	var names_scroll := ScrollContainer.new()
-	names_scroll.custom_minimum_size = Vector2(470, 150)
+	names_scroll.custom_minimum_size = Vector2(470, 90)
 	names_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	column.add_child(names_scroll)
 	var names_column := VBoxContainer.new()
@@ -606,12 +626,12 @@ func _build_main_menu(root: Control) -> void:
 	_rebuild_name_inputs()
 	var play := Button.new()
 	play.text = "SPIEL STARTEN"
-	play.custom_minimum_size.y = 76
+	play.custom_minimum_size.y = 58
 	play.pressed.connect(_start_from_menu)
 	column.add_child(play)
 	var resume := Button.new()
 	resume.text = "← ZURÜCK ZUM SPIEL"
-	resume.custom_minimum_size.y = 65
+	resume.custom_minimum_size.y = 45
 	resume.pressed.connect(_hide_menu)
 	column.add_child(resume)
 	var help := Label.new()
@@ -621,7 +641,7 @@ func _build_main_menu(root: Control) -> void:
 	column.add_child(help)
 	var load_menu := Button.new()
 	load_menu.text = "GESPEICHERTES SPIEL LADEN"
-	load_menu.custom_minimum_size.y = 65
+	load_menu.custom_minimum_size.y = 45
 	load_menu.pressed.connect(_load_game)
 	column.add_child(load_menu)
 	var scoreboard := Label.new()
@@ -658,6 +678,26 @@ func _player_name_changed(value: String, index: int) -> void:
 		custom_player_names.append("")
 	custom_player_names[index] = value.strip_edges()
 
+func _world_name(world: int) -> String:
+	var worlds := [0, 4, 5, 6, 7]
+	var names := ["COMIC", "FROSCHWELT", "WÜSTE & SCHNEE", "INSELWELT", "VULKAN"]
+	var index := worlds.find(world)
+	return names[index] if index >= 0 else "COMIC"
+
+func _update_menu_world_buttons() -> void:
+	for world in [0, 4, 5, 6, 7]:
+		var key := "world_button_%d" % world
+		if controls.has(key):
+			var button: Button = controls[key]
+			button.button_pressed = world == landscape_index
+			button.modulate = Color(1.0, 0.88, 0.45) if world == landscape_index else Color.WHITE
+
+func _select_menu_world(world: int) -> void:
+	landscape_index = world
+	if controls.has("landscape"):
+		controls["landscape"].text = _world_name(world)
+	_update_menu_world_buttons()
+
 func _start_from_menu() -> void:
 	_new_game()
 	_hide_menu()
@@ -691,7 +731,7 @@ func _refresh_ui() -> void:
 	controls["count"].text = "%d SPIELER" % player_count
 	controls["cpu_count"].text = "%d CPU" % cpu_count
 	controls["rules"].text = "REGELN $%d" % starting_cash
-	controls["landscape"].text = ["HÜGEL", "WÜSTE", "ALPEN", "MOND"][landscape_index]
+	controls["landscape"].text = _world_name(landscape_index)
 	labels["scoreboard"].text = "TURNIER (bis %d Siege): %s" % [tournament_target, str(match_wins.slice(0, player_count))]
 	for i in range(WEAPONS.size()):
 		controls["weapon"].set_item_text(i, "%s (%d)" % [WEAPONS[i], p["ammo"][i]])
@@ -1523,5 +1563,6 @@ func _cycle_landscape() -> void:
 	var worlds := [0, 4, 5, 6, 7]
 	var position := worlds.find(landscape_index)
 	landscape_index = worlds[(position + 1) % worlds.size()]
-	controls["landscape"].text = ["COMIC", "FROSCHWELT", "WÜSTE & SCHNEE", "INSELWELT", "VULKAN"][worlds.find(landscape_index)]
+	controls["landscape"].text = _world_name(landscape_index)
+	_update_menu_world_buttons()
 	_new_game()
