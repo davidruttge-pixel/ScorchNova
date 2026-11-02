@@ -43,6 +43,7 @@ var visual_trail: Array[Vector2] = []
 var zebra_echo: Array[Vector2] = []
 var echo_owner := -1
 var visual_clock := 0.0
+var redraw_accumulator: float = 0.0
 var visual_muzzle := Vector2.ZERO
 var visual_muzzle_time := 0.0
 var sparks: Array[Dictionary] = []
@@ -1242,7 +1243,11 @@ func _physics_process(delta: float) -> void:
 		ai_timer -= delta
 		if ai_timer <= 0:
 			_ai_fire()
-	queue_redraw()
+	# Cap costly terrain/background redraws on mobile; physics still runs every tick.
+	redraw_accumulator += delta
+	if redraw_accumulator >= 1.0 / 30.0:
+		redraw_accumulator = 0.0
+		queue_redraw()
 
 func _hits_tank(pos: Vector2) -> bool:
 	for i in range(players.size()):
