@@ -46,7 +46,7 @@ var income_per_turn := 35
 var wind_strength := 40.0
 var starting_cash := 250
 var landscape_index := 0
-var match_wins: Array[int] = [0, 0, 0, 0, 0, 0]
+var match_wins: Array[int] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 var matches_played := 0
 var tournament_target := 3
 var sound_enabled := true
@@ -139,10 +139,10 @@ func _toggle_sound() -> void:
 func _new_game() -> void:
 	terrain.generate_map(landscape_index)
 	players.clear()
-	var colors := [Color("57baff"), Color("ff657d"), Color("f7c85b"), Color("a68bfa"), Color("71e2a3"), Color("ff9b64")]
+	var colors := [Color("57baff"), Color("ff657d"), Color("f7c85b"), Color("a68bfa"), Color("71e2a3"), Color("ff9b64"), Color("46d6cb"), Color("ff8bd5"), Color("b7ef63"), Color("f0aaff")]
 	for i in range(player_count):
 		var is_cpu := i >= player_count - cpu_count
-		players.append({"x": 105.0 + 1070.0 * float(i) / float(player_count - 1), "hp": 100, "shield": 0, "money": starting_cash, "armor": 0, "engine": 0, "damage_upgrade": 0, "angle": 48.0, "power": 72.0, "weapon": 0, "ammo": [999, 2, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 0], "parachutes": 1, "color": colors[i], "name": ("CPU " if is_cpu else "P") + str(i + 1), "cpu": is_cpu})
+		players.append({"x": 105.0 + 1070.0 * float(i) / float(player_count - 1), "hp": 100, "shield": 0, "money": starting_cash, "armor": 0, "engine": 0, "damage_upgrade": 0, "angle": 48.0, "power": 72.0, "weapon": 0, "ammo": [999, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], "teleports": 0, "walks": 0, "parachutes": 1, "color": colors[i], "name": ("CPU " if is_cpu else "P") + str(i + 1), "cpu": is_cpu})
 	current = 0
 	round_number = 1
 	game_over = false
@@ -262,6 +262,18 @@ func _build_ui() -> void:
 	touch_button.pressed.connect(_toggle_touch_aim)
 	row.add_child(touch_button)
 	controls["touch_aim"] = touch_button
+	var teleport_button := Button.new()
+	teleport_button.text = "TELEPORT"
+	teleport_button.custom_minimum_size = Vector2(155, 94)
+	teleport_button.pressed.connect(func(): _use_movement_item("teleport"))
+	row.add_child(teleport_button)
+	controls["teleport"] = teleport_button
+	var walk_button := Button.new()
+	walk_button.text = "LAUFEN"
+	walk_button.custom_minimum_size = Vector2(140, 94)
+	walk_button.pressed.connect(func(): _use_movement_item("walk"))
+	row.add_child(walk_button)
+	controls["walk"] = walk_button
 	var shop := Button.new()
 	shop.text = "SHOP"
 	shop.custom_minimum_size = Vector2(120, 94)
@@ -352,6 +364,8 @@ func _build_ui() -> void:
 	for i in range(1, WEAPONS.size()):
 		popup.add_button("%s  $%d" % [WEAPONS[i], PRICES[i]], false, "buy_%d" % i)
 	popup.add_button("Schild +40  $100", false, "shield")
+	popup.add_button("Teleport (1x)  $170", false, "teleport")
+	popup.add_button("5 Zebralängen laufen (1x)  $90", false, "walk")
 	popup.add_button("Fallschirm +1  $75", false, "parachute")
 	popup.add_button("Panzerung +1 (max. 3)  $160", false, "armor")
 	popup.add_button("Feuerkraft +1 (max. 3)  $200", false, "damage_upgrade")
@@ -456,8 +470,10 @@ func _refresh_ui() -> void:
 	labels["angle"].text = "Winkel %.1f°" % float(p["angle"])
 	labels["power"].text = "Kraft %.1f%%" % float(p["power"])
 	var enabled := not p["cpu"] and phase == "aim" and not game_over
-	for key in ["angle", "power", "angle_minus", "angle_plus", "power_minus", "power_plus", "weapon", "shop", "fire", "direction", "touch_aim"]:
+	for key in ["angle", "power", "angle_minus", "angle_plus", "power_minus", "power_plus", "weapon", "shop", "fire", "direction", "touch_aim", "teleport", "walk"]:
 		controls[key].disabled = not enabled
+	controls["teleport"].text = "TELEPORT (%d)" % int(p.get("teleports", 0))
+	controls["walk"].text = "LAUFEN (%d)" % int(p.get("walks", 0))
 	controls["difficulty"].text = "KI: " + ["LEICHT", "NORMAL", "SCHWER"][ai_difficulty]
 	controls["direction"].text = "RICHTUNG: " + (">" if shot_direction > 0 else "<")
 	controls["count"].text = "%d SPIELER" % player_count
@@ -486,7 +502,7 @@ func _cycle_difficulty() -> void:
 	controls["difficulty"].text = "KI: " + ["LEICHT", "NORMAL", "SCHWER"][ai_difficulty]
 
 func _cycle_player_count() -> void:
-	player_count = 2 if player_count >= 6 else player_count + 1
+	player_count = 2 if player_count >= 10 else player_count + 1
 	cpu_count = mini(cpu_count, player_count - 1)
 	_new_game()
 
@@ -535,7 +551,16 @@ func _shop_action(action: StringName) -> void:
 		return
 	var p: Dictionary = players[current]
 	var command := String(action)
-	if command == "parachute":
+	if command == "teleport" or command == "walk":
+		var price: int = 170 if command == "teleport" else 90
+		if p["money"] >= price:
+			p["money"] -= price
+			var item_key: String = "teleports" if command == "teleport" else "walks"
+			p[item_key] = int(p.get(item_key, 0)) + 1
+			status = "Bewegungs-Item gekauft."
+		else:
+			status = "Nicht genug Geld."
+	elif command == "parachute":
 		if p["money"] >= 75:
 			p["money"] -= 75
 			p["parachutes"] += 1
@@ -568,6 +593,34 @@ func _shop_action(action: StringName) -> void:
 		else:
 			status = "Nicht genug Geld."
 	_refresh_ui()
+
+func _use_movement_item(kind: String) -> void:
+	if phase != "aim" or game_over or players[current]["cpu"]:
+		return
+	var p: Dictionary = players[current]
+	var key: String = "teleports" if kind == "teleport" else "walks"
+	if int(p.get(key, 0)) <= 0:
+		status = "Erst im SHOP kaufen!"
+		_refresh_ui()
+		return
+	var old_x: float = float(p["x"])
+	var distance: float = 360.0 if kind == "teleport" else 175.0
+	var new_x: float = clampf(old_x + shot_direction * distance, 55.0, W - 55.0)
+	for other in players:
+		if other != p and other["hp"] > 0 and absf(float(other["x"]) - new_x) < 65.0:
+			status = "Zielplatz besetzt! Richtung wechseln."
+			_refresh_ui()
+			return
+	if absf(new_x - old_x) < 15.0:
+		status = "Kein Platz am Spielfeldrand."
+		_refresh_ui()
+		return
+	p["x"] = new_x
+	p[key] = int(p[key]) - 1
+	p["last_ground"] = terrain.height_at(new_x)
+	status = "%s nutzt %s!" % [p["name"], "Teleport" if kind == "teleport" else "5-Zebra-Lauf"]
+	_refresh_ui()
+	queue_redraw()
 
 func _tank_pos(idx: int) -> Vector2:
 	var x: float = players[idx]["x"]
@@ -1089,9 +1142,11 @@ func _load_game() -> void:
 			_refresh_ui()
 			return
 		entry["color"] = Color.html(entry["color"])
+		entry["teleports"] = int(entry.get("teleports", 0))
+		entry["walks"] = int(entry.get("walks", 0))
 		restored.append(entry)
 	players = restored
-	if players.size() < 2 or players.size() > 6:
+	if players.size() < 2 or players.size() > 10:
 		_new_game()
 		return
 	for entry in players:
@@ -1115,7 +1170,7 @@ func _load_game() -> void:
 	match_wins.clear()
 	for n in data["wins"]:
 		match_wins.append(int(n))
-	while match_wins.size() < 6:
+	while match_wins.size() < 10:
 		match_wins.append(0)
 	matches_played = int(data["matches"])
 	game_over = bool(data["game_over"])
