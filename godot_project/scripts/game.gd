@@ -1217,6 +1217,10 @@ func _blast(pos: Vector2, radius: float, damage: int) -> void:
 	for tank_index in range(players.size()):
 		impact_positions.append(_tank_pos(tank_index))
 	terrain.carve(pos.x, pos.y, radius)
+	# Desert sand is unstable: large blasts collapse a wider area of the dune.
+	if landscape_index == 5 and radius >= 30.0:
+		terrain.quake(pos.x, radius * 2.2, radius * 0.7)
+		terrain.relax_slopes(pos.x, radius * 2.2, 4)
 	_apply_fall_damage()
 	# Volcanic ground erupts when a sufficiently powerful blast hits the central cone.
 	if landscape_index == 7 and radius >= 35.0 and absf(pos.x - W * 0.5) < 225.0:
