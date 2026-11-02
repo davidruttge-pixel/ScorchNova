@@ -872,8 +872,58 @@ func _end_shot() -> void:
 	_refresh_ui()
 	_save_game(true)
 
+func _ai_prepare_defense_and_movement() -> void:
+	var p: Dictionary = players[current]
+	var nearest: float = INF
+	var nearest_x: float = float(p["x"])
+	for i in range(players.size()):
+		if i == current or players[i]["hp"] <= 0:
+			continue
+		var distance: float = absf(float(players[i]["x"]) - float(p["x"]))
+		if distance < nearest:
+			nearest = distance
+			nearest_x = float(players[i]["x"])
+	# Buy protection when wounded or exposed; do not overspend at low difficulty.
+	var danger: bool = int(p["hp"]) < 65 or nearest < 210.0
+	if danger and int(p["shield"]) < 45 and int(p["money"]) >= 100:
+		p["money"] -= 100
+		p["shield"] = mini(100, int(p["shield"]) + 40)
+	# Experienced AI occasionally invests in escape items.
+	if ai_difficulty >= 1 and int(p.get("walks", 0)) == 0 and int(p["money"]) >= 170 and nearest < 210.0:
+		p["money"] -= 90
+		p["walks"] = 1
+	if ai_difficulty == 2 and int(p.get("teleports", 0)) == 0 and int(p["money"]) >= 310 and int(p["hp"]) < 60:
+		p["money"] -= 170
+		p["teleports"] = 1
+	if not danger:
+		return
+	var move_kind: String = ""
+	var move_distance: float = 0.0
+	if int(p.get("teleports", 0)) > 0 and int(p["hp"]) < 45:
+		move_kind = "teleports"
+		move_distance = 360.0
+	elif int(p.get("walks", 0)) > 0 and nearest < 185.0:
+		move_kind = "walks"
+		move_distance = 175.0
+	if move_kind == "":
+		return
+	var old_x: float = float(p["x"])
+	var escape_direction: float = -1.0 if nearest_x > old_x else 1.0
+	var new_x: float = clampf(old_x + escape_direction * move_distance, 55.0, W - 55.0)
+	if absf(new_x - old_x) < 25.0:
+		return
+	for other in players:
+		if other != p and int(other["hp"]) > 0 and absf(float(other["x"]) - new_x) < 65.0:
+			return
+	p["x"] = new_x
+	p[move_kind] = int(p[move_kind]) - 1
+	p["last_ground"] = terrain.height_at(new_x)
+	status = "%s weicht mit %s aus!" % [p["name"], "Teleport" if move_kind == "teleports" else "Laufen"]
+	queue_redraw()
+
 func _ai_fire() -> void:
 	var p: Dictionary = players[current]
+	_ai_prepare_defense_and_movement()
 	# AI saves for protection and chooses purchasable weapons at higher levels.
 	if ai_difficulty >= 1 and p["shield"] < 20 and p["money"] >= 100:
 		p["money"] -= 100
