@@ -362,12 +362,72 @@ func _build_ui() -> void:
 	message.add_theme_font_size_override("font_size", 22)
 	root.add_child(message)
 	labels["status"] = message
-	var popup := AcceptDialog.new()
-	popup.title = "Waffenladen"
-	popup.dialog_text = "Wähle einen Einkauf (nur vor deinem Schuss):"
-	popup.size = Vector2i(560, 520)
+	var popup := PopupPanel.new()
+	popup.size = Vector2i(650, 560)
 	root.add_child(popup)
 	controls["popup"] = popup
+	var shop_layout := VBoxContainer.new()
+	shop_layout.custom_minimum_size = Vector2(620, 530)
+	popup.add_child(shop_layout)
+	var shop_title := Label.new()
+	shop_title.text = "ZEBRA-SHOP"
+	shop_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	shop_title.add_theme_font_size_override("font_size", 30)
+	shop_layout.add_child(shop_title)
+	var shop_money := Label.new()
+	shop_money.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	shop_layout.add_child(shop_money)
+	labels["shop_money"] = shop_money
+	var shop_scroll := ScrollContainer.new()
+	shop_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	shop_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	shop_layout.add_child(shop_scroll)
+	var shop_items := VBoxContainer.new()
+	shop_items.custom_minimum_size.x = 595
+	shop_items.add_theme_constant_override("separation", 8)
+	shop_scroll.add_child(shop_items)
+	var category := Label.new()
+	category.text = "WAFFEN & MUNITION"
+	category.add_theme_font_size_override("font_size", 24)
+	shop_items.add_child(category)
+	for i in range(1, WEAPONS.size()):
+		var buy_button := Button.new()
+		buy_button.text = "%s  —  $%d" % [WEAPONS[i], PRICES[i]]
+		buy_button.custom_minimum_size.y = 55
+		buy_button.pressed.connect(_shop_buy.bind("buy_%d" % i))
+		shop_items.add_child(buy_button)
+	var protection_title := Label.new()
+	protection_title.text = "SCHUTZ & VERBESSERUNGEN"
+	protection_title.add_theme_font_size_override("font_size", 24)
+	shop_items.add_child(protection_title)
+	var protection_items := [
+		["Schild +40", 100, "shield"],
+		["Fallschirm +1", 75, "parachute"],
+		["Panzerung +1", 160, "armor"],
+		["Feuerkraft +1", 200, "damage_upgrade"],
+		["Antrieb +1", 120, "engine"]
+	]
+	for item in protection_items:
+		var buy_button := Button.new()
+		buy_button.text = "%s  —  $%d" % [item[0], item[1]]
+		buy_button.custom_minimum_size.y = 55
+		buy_button.pressed.connect(_shop_buy.bind(item[2]))
+		shop_items.add_child(buy_button)
+	var movement_title := Label.new()
+	movement_title.text = "BEWEGUNG"
+	movement_title.add_theme_font_size_override("font_size", 24)
+	shop_items.add_child(movement_title)
+	for item in [["Teleport (1x)", 170, "teleport"], ["5 Zebralängen laufen", 90, "walk"]]:
+		var buy_button := Button.new()
+		buy_button.text = "%s  —  $%d" % [item[0], item[1]]
+		buy_button.custom_minimum_size.y = 55
+		buy_button.pressed.connect(_shop_buy.bind(item[2]))
+		shop_items.add_child(buy_button)
+	var shop_back := Button.new()
+	shop_back.text = "← ZURÜCK ZUM SPIEL"
+	shop_back.custom_minimum_size.y = 65
+	shop_back.pressed.connect(func(): popup.hide())
+	shop_layout.add_child(shop_back)
 	_build_main_menu(root)
 	var terrain_button := Button.new()
 	terrain_button.text = "LANDSCHAFT"
@@ -409,6 +469,11 @@ func _build_ui() -> void:
 	extras_button.pressed.connect(func(): extras_popup.popup_centered())
 	row.add_child(extras_button)
 	controls["extras"] = extras_button
+	var extras_back := Button.new()
+	extras_back.text = "← ZURÜCK ZUM SPIEL"
+	extras_back.custom_minimum_size = Vector2(365, 64)
+	extras_back.pressed.connect(func(): extras_popup.hide())
+	extras_column.add_child(extras_back)
 	var secondary_controls: Array[Control] = [
 		angle, angle_label, power, power_label, touch_button,
 		teleport_button, walk_button, direction_button, menu_button,
@@ -425,16 +490,6 @@ func _build_ui() -> void:
 	angle_plus.text = "W+"
 	power_minus.text = "K−"
 	power_plus.text = "K+"
-	for i in range(1, WEAPONS.size()):
-		popup.add_button("%s  $%d" % [WEAPONS[i], PRICES[i]], false, "buy_%d" % i)
-	popup.add_button("Schild +40  $100", false, "shield")
-	popup.add_button("Teleport (1x)  $170", false, "teleport")
-	popup.add_button("5 Zebralängen laufen (1x)  $90", false, "walk")
-	popup.add_button("Fallschirm +1  $75", false, "parachute")
-	popup.add_button("Panzerung +1 (max. 3)  $160", false, "armor")
-	popup.add_button("Feuerkraft +1 (max. 3)  $200", false, "damage_upgrade")
-	popup.add_button("Antrieb +1 (max. 3)  $120", false, "engine")
-	popup.custom_action.connect(_shop_action)
 
 func _apply_ui_theme(root: Control) -> void:
 	var theme := Theme.new()
@@ -644,7 +699,15 @@ func _power_changed(value: float) -> void:
 	queue_redraw()
 
 func _shop_pressed() -> void:
+	if players.is_empty():
+		return
+	labels["shop_money"].text = "Dein Guthaben: $%d" % int(players[current]["money"])
 	controls["popup"].popup_centered()
+
+func _shop_buy(action: String) -> void:
+	_shop_action(StringName(action))
+	if not players.is_empty():
+		labels["shop_money"].text = "Dein Guthaben: $%d  |  %s" % [int(players[current]["money"]), status]
 
 func _shop_action(action: StringName) -> void:
 	if phase != "aim" or players[current]["cpu"]:
