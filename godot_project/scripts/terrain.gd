@@ -45,7 +45,7 @@ func draw_terrain(canvas: CanvasItem) -> void:
 	for x in range(0, WIDTH + 1, 8):
 		outline.append(Vector2(x, height_at(x)))
 	outline.append(Vector2(WIDTH, FLOOR))
-	canvas.draw_colored_polygon(outline, Color("9d4b2d"))
+	canvas.draw_colored_polygon(outline, Color("3c2445"))
 
 	# Broad colored soil strata follow the actual destructible surface.
 	# Polygon bands are clipped naturally by the same heightmap.
@@ -56,20 +56,21 @@ func draw_terrain(canvas: CanvasItem) -> void:
 			band_poly.append(Vector2(x, minf(float(FLOOR), height_at(x) + offset)))
 		band_poly.append(Vector2(WIDTH, FLOOR))
 		band_poly.append(Vector2(0, FLOOR))
-		var shade := Color("c96b30")
+		var shade := Color("e88a40")
 		if band == 1:
-			shade = Color("a74b2e")
+			shade = Color("c36a38")
 		elif band == 2:
-			shade = Color("78334a")
+			shade = Color("8f4350")
 		canvas.draw_colored_polygon(band_poly, shade)
 
 	# Fine contour highlights and shaded grass lip.
 	for x in range(0, WIDTH, 8):
 		var p := Vector2(x, height_at(x))
 		var q := Vector2(x + 8, height_at(x + 8))
-		canvas.draw_line(p + Vector2(0, 5), q + Vector2(0, 5), Color("285d29"), 9.0, true)
-		canvas.draw_line(p, q, Color("9df12d"), 7.0, true)
-		canvas.draw_line(p + Vector2(0, -2), q + Vector2(0, -2), Color("d5ff64"), 2.0, true)
+		canvas.draw_line(p + Vector2(0, 9), q + Vector2(0, 9), Color("34243d"), 13.0, true)
+		canvas.draw_line(p + Vector2(0, 5), q + Vector2(0, 5), Color("356b2a"), 11.0, true)
+		canvas.draw_line(p, q, Color("85dd2c"), 9.0, true)
+		canvas.draw_line(p + Vector2(0, -2), q + Vector2(0, -2), Color("d7ff65"), 3.0, true)
 
 	# Deterministic pebbles and small soil texture marks; no random flicker.
 	for i in range(65):
@@ -78,7 +79,7 @@ func draw_terrain(canvas: CanvasItem) -> void:
 		if sy > FLOOR - 8.0:
 			continue
 		var stone_radius: float = 1.7 + float(i % 4) * 0.8
-		canvas.draw_circle(Vector2(sx, sy), stone_radius, Color("663747") if i % 3 == 0 else Color("e58b42"))
+		canvas.draw_circle(Vector2(sx, sy), stone_radius, Color("643a49") if i % 3 == 0 else Color("ffb46b"))
 
 	# Small grass tufts attached to the changing terrain silhouette.
 	for i in range(30):
