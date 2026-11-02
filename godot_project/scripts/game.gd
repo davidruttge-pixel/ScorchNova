@@ -4,6 +4,9 @@ var W: float = 1280.0
 var map_size_mode: int = -1
 var camera: Camera2D
 var camera_drag_start: Vector2 = Vector2.ZERO
+var aim_panel_offset: Vector2 = Vector2(0.0, -95.0)
+var aim_panel_dragging: bool = false
+var aim_panel_drag_origin: Vector2 = Vector2.ZERO
 const H := 720.0
 const GRAVITY := 240.0
 const WEAPONS := ["Granate", "Schwer", "Cluster", "Napalm", "Atom", "MIRV", "Roller", "Dirt-Bombe", "Death Head", "Bouncer", "Erdbeben", "Laser", "Super-MIRV", "Splitterregen", "Bohrer", "Mega-Dirt"]
@@ -67,6 +70,20 @@ var custom_player_names: Array[String] = []
 var ui_root: Control
 
 func _unhandled_input(event: InputEvent) -> void:
+	if aim_panel_dragging:
+		if event is InputEventScreenDrag or event is InputEventMouseMotion:
+			var pointer: Vector2 = _screen_to_world(event.position)
+			aim_panel_offset += pointer - aim_panel_drag_origin
+			aim_panel_offset.x = clampf(aim_panel_offset.x, -460.0, 460.0)
+			aim_panel_offset.y = clampf(aim_panel_offset.y, -320.0, 180.0)
+			aim_panel_drag_origin = pointer
+			queue_redraw()
+			get_viewport().set_input_as_handled()
+			return
+		if (event is InputEventScreenTouch and not event.pressed) or (event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and not event.pressed):
+			aim_panel_dragging = false
+			get_viewport().set_input_as_handled()
+			return
 	if not menu_open and not shop_open and not game_over and phase == "aim" and not players.is_empty() and not players[current]["cpu"]:
 		if event is InputEventScreenTouch and event.pressed:
 			if _handle_floating_aim_touch(_screen_to_world(event.position)):
@@ -88,8 +105,8 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func _floating_aim_rect() -> Rect2:
 	var tank: Vector2 = _tank_pos(current)
-	var left: float = clampf(tank.x - 120.0, camera.position.x - 610.0, camera.position.x + 370.0)
-	var top: float = maxf(120.0, tank.y - 170.0)
+	var left: float = clampf(tank.x - 120.0 + aim_panel_offset.x, camera.position.x - 610.0, camera.position.x + 370.0)
+	var top: float = clampf(tank.y - 170.0 + aim_panel_offset.y, 115.0, 465.0)
 	return Rect2(left, top, 240.0, 104.0)
 
 func _handle_floating_aim_touch(point: Vector2) -> bool:
@@ -97,6 +114,10 @@ func _handle_floating_aim_touch(point: Vector2) -> bool:
 	if not rect.has_point(point):
 		return false
 	var local: Vector2 = point - rect.position
+	if local.y < 38.0:
+		aim_panel_dragging = true
+		aim_panel_drag_origin = point
+		return true
 	if local.y >= 38.0 and local.y < 73.0:
 		if local.x < 48.0:
 			_nudge_aim("angle", -1.0)
@@ -117,7 +138,7 @@ func _draw_floating_aim() -> void:
 	draw_rect(rect, Color(0.48, 0.83, 1.0, 0.8), false, 2.0)
 	var x: float = rect.position.x
 	var y: float = rect.position.y
-	draw_string(font, Vector2(x + 13.0, y + 24.0), "ZIELWERTE", HORIZONTAL_ALIGNMENT_LEFT, -1, 17, Color(0.75, 0.94, 1.0))
+	draw_string(font, Vector2(x + 13.0, y + 24.0), "ZIELWERTE  ≡ ZIEHEN", HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color(0.75, 0.94, 1.0))
 	draw_string(font, Vector2(x + 12.0, y + 62.0), "−", HORIZONTAL_ALIGNMENT_LEFT, -1, 23, Color.WHITE)
 	draw_string(font, Vector2(x + 57.0, y + 62.0), "Winkel %.1f°" % float(p["angle"]), HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color.WHITE)
 	draw_string(font, Vector2(x + 207.0, y + 62.0), "+", HORIZONTAL_ALIGNMENT_LEFT, -1, 23, Color.WHITE)
