@@ -249,6 +249,23 @@ func _weather_name() -> String:
 			return "THERMIK"
 	return "WIND"
 
+func _draw_wind_streams() -> void:
+	# Wind direction matches projectile physics: positive wind blows to the right.
+	if absf(wind) < 1.0:
+		return
+	var direction: float = signf(wind)
+	var speed: float = 16.0 + absf(wind) * 1.3
+	var viewport_left: float = clampf(camera.get_screen_center_position().x - 640.0, 0.0, maxf(0.0, W - 1280.0))
+	for i in range(16):
+		var x: float = viewport_left + fposmod(float(i * 103) + visual_clock * speed * direction, 1280.0)
+		var y: float = 135.0 + float((i * 67) % 350)
+		var length: float = 16.0 + minf(absf(wind) * 0.3, 18.0)
+		var start: Vector2 = Vector2(x, y)
+		var finish: Vector2 = start + Vector2(direction * length, -2.0)
+		draw_line(start, finish, Color(0.87, 0.95, 1.0, 0.33), 1.6)
+		draw_line(finish, finish + Vector2(-direction * 5.0, -3.0), Color(0.87, 0.95, 1.0, 0.33), 1.2)
+		draw_line(finish, finish + Vector2(-direction * 5.0, 3.0), Color(0.87, 0.95, 1.0, 0.33), 1.2)
+
 func _draw_world_weather() -> void:
 	# Lightweight, deterministic weather particles; visual only.
 	if landscape_index == 4:
@@ -925,7 +942,7 @@ func _refresh_ui() -> void:
 	labels["p1"].text = "%s  HP:%d  Schild:%d" % [players[current]["name"], players[current]["hp"], players[current]["shield"]]
 	labels["p2"].text = "Geld $%d  |  %d aktiv" % [players[current]["money"], living]
 	labels["round"].text = "RUNDE %d" % round_number
-	labels["wind"].text = "%s %+.0f" % [_weather_name(), wind]
+	labels["wind"].text = "%s  %s  %.0f  (%s)" % [_weather_name(), "→" if wind > 1.0 else ("←" if wind < -1.0 else "•"), absf(wind), "von links" if wind > 1.0 else ("von rechts" if wind < -1.0 else "windstill")]
 	labels["status"].text = status
 	var p: Dictionary = players[current]
 	p["angle"] = clampf(float(p["angle"]), 5.0, 85.0)
@@ -1632,6 +1649,7 @@ func _draw_zebra_echo() -> void:
 func _draw() -> void:
 	_draw_theme_background()
 	_draw_world_weather()
+	_draw_wind_streams()
 	terrain.draw_terrain(self)
 	if touch_target_timer > 0.0:
 		var alpha: float = minf(1.0, touch_target_timer)
