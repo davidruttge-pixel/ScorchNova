@@ -113,7 +113,7 @@ func _touch_aim_at(target: Vector2) -> void:
 			var speed: float = float(power_percent) * 6.3
 			var vx: float = cos(radians) * speed * direction
 			var vy: float = -sin(radians) * speed
-			var ax: float = wind * 0.45
+			var ax: float = wind * 1.05
 			var time: float = absf(dx) / maxf(absf(vx), 1.0)
 			for iteration in range(3):
 				var diff: float = vx * time + 0.5 * ax * time * time - dx
@@ -158,6 +158,17 @@ func _play_sound(sound_name: String) -> void:
 		var player: AudioStreamPlayer = sound_players[sound_name]
 		player.stop()
 		player.play()
+
+func _play_weapon_sound(weapon: int) -> void:
+	# Reuse bundled samples with distinct per-weapon timbre and loudness.
+	if not sound_enabled or not sound_players.has("fire"):
+		return
+	var player: AudioStreamPlayer = sound_players["fire"]
+	var pitches := [1.0, 0.76, 1.18, 0.87, 0.53, 1.07, 1.33, 0.92, 0.58, 1.42, 0.66, 1.7, 0.73, 1.24, 0.81, 0.62]
+	player.pitch_scale = pitches[clampi(weapon, 0, pitches.size() - 1)]
+	player.volume_db = -3.0 if weapon in [4, 8, 12, 15] else -6.0
+	player.stop()
+	player.play()
 
 func _toggle_sound() -> void:
 	sound_enabled = not sound_enabled
@@ -312,7 +323,7 @@ func _build_ui() -> void:
 	controls["shop"] = shop
 	var direction_button := Button.new()
 	direction_button.text = "RICHTUNG: >"
-	direction_button.custom_minimum_size = Vector2(150, 94)
+	direction_button.custom_minimum_size = Vector2(145, 94)
 	direction_button.pressed.connect(_toggle_direction)
 	row.add_child(direction_button)
 	controls["direction"] = direction_button
@@ -518,7 +529,7 @@ func _build_ui() -> void:
 	settings_back.custom_minimum_size.y = 58
 	settings_back.pressed.connect(func(): settings_popup.hide())
 	settings_column.add_child(settings_back)
-	for item_control in [teleport_button, walk_button, direction_button]:
+	for item_control in [teleport_button, walk_button]:
 		item_control.reparent(items_column)
 		item_control.custom_minimum_size = Vector2(385, 60)
 	for setting_control in [touch_button, difficulty_button, count_button, cpu_button, rules_button, terrain_button, sound_button]:
@@ -863,7 +874,7 @@ func _fire() -> void:
 	bounce_count = 0
 	shot_owner = current
 	projectile_active = true
-	_play_sound("fire")
+	_play_weapon_sound(weapon)
 	phase = "flying"
 	status = "%s schießt %s" % [p["name"], WEAPONS[weapon]]
 	_refresh_ui()
@@ -893,7 +904,7 @@ func _physics_process(delta: float) -> void:
 		var steps := 5
 		for step in range(steps):
 			var dt := delta / steps
-			velocity += Vector2(wind * 0.45, GRAVITY) * dt
+			velocity += Vector2(wind * 1.05, GRAVITY) * dt
 			projectile += velocity * dt
 			if projectile.x < 0 or projectile.x > W or projectile.y > TerrainModel.FLOOR + 50 or projectile_age > 18.0:
 				projectile_active = false
@@ -924,7 +935,7 @@ func _physics_process(delta: float) -> void:
 	if not falling.is_empty():
 		for i in range(falling.size() - 1, -1, -1):
 			var f: Dictionary = falling[i]
-			f["velocity"] += Vector2(wind * 0.2, GRAVITY * 0.75) * delta
+			f["velocity"] += Vector2(wind * 0.45, GRAVITY * 0.75) * delta
 			f["pos"] += f["velocity"] * delta
 			if f["pos"].x < 0 or f["pos"].x > W or f["pos"].y >= terrain.height_at(f["pos"].x):
 				falling.remove_at(i)
@@ -1169,7 +1180,7 @@ func _ai_fire() -> void:
 			var pos := origin + Vector2(direction * 19, -17)
 			var closest := INF
 			for t in range(210):
-				vel += Vector2(wind * 0.45, GRAVITY) * 0.035
+				vel += Vector2(wind * 1.05, GRAVITY) * 0.035
 				pos += vel * 0.035
 				closest = minf(closest, pos.distance_to(target))
 				if pos.x < 0 or pos.x > W or pos.y >= terrain.height_at(pos.x):
@@ -1374,7 +1385,7 @@ func _draw_trajectory() -> void:
 	var start_x: float = pos.x
 	var dt: float = 1.0 / 150.0
 	for i in range(900):
-		v += Vector2(wind * 0.45, GRAVITY) * dt
+		v += Vector2(wind * 1.05, GRAVITY) * dt
 		pos += v * dt
 		if pos.x < 0.0 or pos.x > W or pos.y > float(TerrainModel.FLOOR) + 50.0:
 			break
