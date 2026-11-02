@@ -37,6 +37,8 @@ var shot_direction := 1.0
 var bounce_count := 0
 var projectile_age := 0.0
 var visual_trail: Array[Vector2] = []
+var zebra_echo: Array[Vector2] = []
+var echo_owner := -1
 var visual_clock := 0.0
 var visual_muzzle := Vector2.ZERO
 var visual_muzzle_time := 0.0
@@ -189,6 +191,8 @@ func _new_game() -> void:
 	game_over = false
 	projectile_active = false
 	queued_bursts.clear()
+	zebra_echo.clear()
+	echo_owner = -1
 	falling.clear()
 	effects.clear()
 	sparks.clear()
@@ -1053,6 +1057,7 @@ func _physics_process(delta: float) -> void:
 			velocity += Vector2(wind * 1.05, GRAVITY) * dt
 			projectile += velocity * dt
 			if projectile.x < 0 or projectile.x > W or projectile.y > TerrainModel.FLOOR + 50 or projectile_age > 18.0:
+				_store_zebra_echo()
 				projectile_active = false
 				_end_shot()
 				break
@@ -1064,6 +1069,7 @@ func _physics_process(delta: float) -> void:
 					velocity.y = -maxf(110.0, absf(velocity.y) * 0.65)
 					velocity.x *= 0.8
 					continue
+				_store_zebra_echo()
 				projectile_active = false
 				_explode(projectile, projectile_weapon)
 				if queued_bursts.is_empty() and falling.is_empty():
@@ -1431,6 +1437,18 @@ func _draw_theme_background() -> void:
 			draw_line(Vector2(cx - 14, 358), Vector2(cx + 14, 358), Color("ff713c"), 10)
 			draw_line(Vector2(cx, 360), Vector2(cx + 28, 450), Color("ed5036"), 7)
 
+func _store_zebra_echo() -> void:
+	zebra_echo = visual_trail.duplicate()
+	zebra_echo.append(projectile)
+	echo_owner = shot_owner
+
+func _draw_zebra_echo() -> void:
+	if echo_owner != current or zebra_echo.size() < 2:
+		return
+	for i in range(0, zebra_echo.size(), 3):
+		var point: Vector2 = zebra_echo[i]
+		draw_circle(point, 2.3, Color(0.35, 0.88, 1.0, 0.45))
+
 func _draw() -> void:
 	_draw_theme_background()
 	terrain.draw_terrain(self)
@@ -1442,6 +1460,7 @@ func _draw() -> void:
 	for i in range(players.size()):
 		_draw_tank(i)
 	if phase == "aim" and not game_over and not players[current]["cpu"]:
+		_draw_zebra_echo()
 		_draw_trajectory()
 	for f in falling:
 		draw_circle(f["pos"], 4.0, Color("ffb34f"))
@@ -1527,28 +1546,26 @@ func _draw_tank(i: int) -> void:
 	draw_rect(Rect2(bar.position, Vector2(54.0 * float(p["hp"]) / 100.0, 7)), Color("66f43f"))
 
 func _draw_trajectory() -> void:
-	# High precision preview using the same acceleration and substep duration as live shots.
+	# Show only the first half of the predicted flight. Physics remains unchanged.
 	var p: Dictionary = players[current]
 	var direction: int = shot_direction
 	var a: float = deg_to_rad(clampf(float(p["angle"]), 5.0, 85.0))
 	var v: Vector2 = Vector2(cos(a) * direction, -sin(a)) * float(p["power"]) * 6.3
 	var pos: Vector2 = _tank_pos(current) + Vector2(direction * 19, -17)
-	var start_x: float = pos.x
 	var dt: float = 1.0 / 150.0
+	var points: Array[Vector2] = []
 	for i in range(900):
 		v += Vector2(wind * 1.05, GRAVITY) * dt
 		pos += v * dt
 		if pos.x < 0.0 or pos.x > W or pos.y > float(TerrainModel.FLOOR) + 50.0:
 			break
 		if pos.y >= terrain.height_at(pos.x):
-			draw_circle(pos, 5.0, Color("ffe081", 0.8))
 			break
-		if i % 18 == 0:
-			draw_circle(pos, 2.0, Color("ffffff", 0.78))
-	# A subtle horizontal ruler helps estimate the shot distance.
-	var bar_y: float = 605.0
-	draw_line(Vector2(start_x, bar_y), Vector2(pos.x, bar_y), Color("8fe8ff", 0.55), 2.0)
-	draw_circle(Vector2(pos.x, bar_y), 3.0, Color("8fe8ff", 0.85))
+		points.append(pos)
+	var visible_count: int = maxi(1, int(ceil(float(points.size()) * 0.5)))
+	for i in range(0, visible_count, 18):
+		draw_circle(points[i], 2.5, Color("ffe081", 0.82))
+
 
 # Version 0.8: Save only stable turn boundaries to avoid restoring half-resolved explosions.
 func _save_game(automatic: bool = false) -> void:
