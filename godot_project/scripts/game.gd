@@ -219,15 +219,15 @@ func _build_ui() -> void:
 	bottom.size = Vector2(1256, 119)
 	root.add_child(bottom)
 	var scroll := ScrollContainer.new()
-	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	bottom.add_child(scroll)
 	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 14)
+	row.add_theme_constant_override("separation", 8)
 	scroll.add_child(row)
 	var angle_minus := Button.new()
 	angle_minus.text = "−"
-	angle_minus.custom_minimum_size = Vector2(82, 94)
+	angle_minus.custom_minimum_size = Vector2(66, 94)
 	angle_minus.add_theme_font_size_override("font_size", 35)
 	angle_minus.pressed.connect(func(): _nudge_aim("angle", -0.5))
 	row.add_child(angle_minus)
@@ -254,7 +254,7 @@ func _build_ui() -> void:
 	row.add_child(power_plus)
 	controls["power_plus"] = power_plus
 	var weapon := OptionButton.new()
-	weapon.custom_minimum_size = Vector2(160, 94)
+	weapon.custom_minimum_size = Vector2(135, 94)
 	for w in WEAPONS:
 		weapon.add_item(w)
 	weapon.item_selected.connect(_weapon_selected)
@@ -391,6 +391,45 @@ func _build_ui() -> void:
 	load_button.custom_minimum_size = Vector2(110, 65)
 	load_button.pressed.connect(_load_game)
 	row.add_child(load_button)
+	# Compact primary controls stay visible; secondary controls live in a separate extras window.
+	var extras_popup := PopupPanel.new()
+	extras_popup.title = "EXTRAS & EINSTELLUNGEN"
+	extras_popup.size = Vector2i(420, 550)
+	root.add_child(extras_popup)
+	var extras_scroll := ScrollContainer.new()
+	extras_scroll.custom_minimum_size = Vector2(400, 520)
+	extras_popup.add_child(extras_scroll)
+	var extras_column := VBoxContainer.new()
+	extras_column.custom_minimum_size.x = 385
+	extras_column.add_theme_constant_override("separation", 9)
+	extras_scroll.add_child(extras_column)
+	var extras_button := Button.new()
+	extras_button.text = "EXTRAS"
+	extras_button.custom_minimum_size = Vector2(125, 94)
+	extras_button.pressed.connect(func(): extras_popup.popup_centered())
+	row.add_child(extras_button)
+	controls["extras"] = extras_button
+	var secondary_controls: Array[Control] = [
+		angle, angle_label, power, power_label, touch_button,
+		teleport_button, walk_button, direction_button, menu_button,
+		restart, difficulty_button, count_button, cpu_button, rules_button,
+		terrain_button, sound_button, save_button, load_button
+	]
+	for control in secondary_controls:
+		control.reparent(extras_column)
+		control.custom_minimum_size = Vector2(365, 58)
+	menu_button.pressed.connect(func(): extras_popup.hide())
+	restart.pressed.connect(func(): extras_popup.hide())
+	load_button.pressed.connect(func(): extras_popup.hide())
+	var angle_caption := Label.new()
+	angle_caption.text = "WINKEL"
+	angle_caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	row.add_child(angle_caption)
+	angle_caption.custom_minimum_size.x = 75
+	var power_caption := Label.new()
+	power_caption.text = "KRAFT"
+	power_caption.custom_minimum_size.x = 70
+	row.add_child(power_caption)
 	for i in range(1, WEAPONS.size()):
 		popup.add_button("%s  $%d" % [WEAPONS[i], PRICES[i]], false, "buy_%d" % i)
 	popup.add_button("Schild +40  $100", false, "shield")
