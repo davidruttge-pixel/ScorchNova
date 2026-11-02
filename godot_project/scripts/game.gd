@@ -176,7 +176,8 @@ func _update_camera(delta: float) -> void:
 	if projectile_active:
 		focus_x = projectile.x
 	var goal_x: float = clampf(focus_x, 640.0, maxf(640.0, W - 640.0))
-	camera.position.x = lerpf(camera.position.x, goal_x, clampf(delta * 3.0, 0.0, 1.0))
+	# Camera2D already smooths its position; avoid a second lerp that causes laggy scrolling.
+	camera.position.x = goal_x
 
 func _ready() -> void:
 	camera = Camera2D.new()
@@ -1245,7 +1246,9 @@ func _physics_process(delta: float) -> void:
 			_ai_fire()
 	# Cap costly terrain/background redraws on mobile; physics still runs every tick.
 	redraw_accumulator += delta
-	if redraw_accumulator >= 1.0 / 30.0:
+	# Moving projectiles need smooth visual updates; idle scenes stay at 30 FPS.
+	var draw_interval: float = 1.0 / 60.0 if projectile_active else 1.0 / 30.0
+	if redraw_accumulator >= draw_interval:
 		redraw_accumulator = 0.0
 		queue_redraw()
 
