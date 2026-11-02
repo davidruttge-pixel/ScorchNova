@@ -12,17 +12,53 @@ func generate_map(landscape: int = 0) -> void:
 	world_style = landscape
 	heights.resize(WIDTH + 1)
 	var phase := rng.randf_range(0.0, 6.28)
+	# Each world has a distinct tactical silhouette, not just a color palette.
+	var island_centers := [165.0, 465.0, 815.0, 1110.0]
 	for x in range(WIDTH + 1):
-		var y := 435.0 + sin(x * 0.008 + phase) * 73.0 + sin(x * 0.021 + phase * 0.4) * 30.0 + sin(x * 0.049) * 9.0
+		var fx := float(x)
+		var y := 435.0 + sin(fx * 0.008 + phase) * 73.0 + sin(fx * 0.021 + phase * 0.4) * 30.0 + sin(fx * 0.049) * 9.0
 		match landscape:
-			1: y = 465.0 + sin(x * 0.006 + phase) * 38.0 + sin(x * 0.025) * 12.0
-			2: y = 450.0 + absf(sin(x * 0.009 + phase)) * -125.0 + sin(x * 0.031) * 18.0
-			3: y = 455.0 + sin(x * 0.013 + phase) * 48.0 + sin(x * 0.045) * 15.0
-			4: y = 450.0 + sin(x * 0.012 + phase) * 42.0 + sin(x * 0.047) * 13.0
-			5: y = 460.0 + sin(x * 0.005 + phase) * 35.0 + sin(x * 0.027) * 9.0
-			6: y = 455.0 + sin(x * 0.010 + phase) * 50.0 + sin(x * 0.030) * 12.0
-			7: y = 440.0 + sin(x * 0.013 + phase) * 76.0 + sin(x * 0.039) * 23.0
-		heights[x] = clampf(y, 290.0, 540.0)
+			1: y = 465.0 + sin(fx * 0.006 + phase) * 38.0 + sin(fx * 0.025) * 12.0
+			2: y = 450.0 - absf(sin(fx * 0.009 + phase)) * 125.0 + sin(fx * 0.031) * 18.0
+			3: y = 455.0 + sin(fx * 0.013 + phase) * 48.0 + sin(fx * 0.045) * 15.0
+			4:
+				# Swamp: broad low marshes separated by small raised hummocks.
+				y = 496.0 + sin(fx * 0.005 + phase) * 13.0 + sin(fx * 0.024) * 7.0
+				for mound in [230.0, 635.0, 1030.0]:
+					y -= 62.0 * exp(-pow((fx - mound) / 83.0, 2.0))
+			5:
+				# Desert/snow: wide dunes alternating with tall, sharp alpine peaks.
+				y = 470.0 + sin(fx * 0.006 + phase) * 22.0
+				for peak in [345.0, 730.0, 1060.0]:
+					y -= 145.0 * maxf(0.0, 1.0 - absf(fx - peak) / 115.0)
+			6:
+				# Island chain: distinct plateaus separated by deep water-like channels.
+				y = 545.0
+				for center in island_centers:
+					var distance := absf(fx - center)
+					var island_shape := clampf((distance - 80.0) / 45.0, 0.0, 1.0)
+					var island_y := 415.0 + sin(fx * 0.018 + phase) * 13.0 + island_shape * 130.0
+					y = minf(y, island_y)
+			7:
+				# Volcano: a high central cone, a deep crater and jagged ridges.
+				y = 477.0 + sin(fx * 0.014 + phase) * 23.0
+				var cone := maxf(0.0, 1.0 - absf(fx - 650.0) / 290.0)
+				y -= 175.0 * cone
+				y += 112.0 * exp(-pow((fx - 650.0) / 58.0, 2.0))
+				y -= 55.0 * maxf(0.0, 1.0 - absf(fx - 260.0) / 80.0)
+				y -= 65.0 * maxf(0.0, 1.0 - absf(fx - 1030.0) / 95.0)
+		heights[x] = clampf(y, 290.0, 550.0)
+	# Make starting positions stable without erasing the worlds' tactical differences.
+	# The 10-player layout uses the same x coordinates as the match spawner.
+	for count in range(2, 11):
+		for i in range(count):
+			var spawn_x := 105.0 + 1070.0 * float(i) / float(count - 1)
+			# Only soften the immediate footing; keep neighboring slopes intact.
+			var ground_y := height_at(spawn_x)
+			for offset in range(-12, 13):
+				var index := clampi(int(spawn_x) + offset, 0, WIDTH)
+				var influence := 1.0 - absf(float(offset)) / 13.0
+				heights[index] = lerpf(heights[index], ground_y, influence * 0.6)
 
 func height_at(x: float) -> float:
 	return heights[clampi(int(x), 0, WIDTH)]
