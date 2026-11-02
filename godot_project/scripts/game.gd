@@ -264,13 +264,42 @@ func _build_ui() -> void:
 	power_plus.pressed.connect(func(): _nudge_aim("power", 0.5))
 	row.add_child(power_plus)
 	controls["power_plus"] = power_plus
-	var weapon := OptionButton.new()
-	weapon.custom_minimum_size = Vector2(135, 94)
-	for w in WEAPONS:
-		weapon.add_item(w)
-	weapon.item_selected.connect(_weapon_selected)
+	var weapon := Button.new()
+	weapon.text = "WAFFEN"
+	weapon.custom_minimum_size = Vector2(155, 94)
+	weapon.pressed.connect(_open_weapon_arsenal)
 	row.add_child(weapon)
 	controls["weapon"] = weapon
+	var arsenal := PopupPanel.new()
+	arsenal.title = "WAFFENARSENAL"
+	arsenal.size = Vector2i(790, 545)
+	root.add_child(arsenal)
+	controls["arsenal"] = arsenal
+	var arsenal_layout := VBoxContainer.new()
+	arsenal_layout.custom_minimum_size = Vector2(760, 510)
+	arsenal.add_child(arsenal_layout)
+	var arsenal_title := Label.new()
+	arsenal_title.text = "WAFFEN WÄHLEN  •  ∞ = unbegrenzt"
+	arsenal_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	arsenal_title.add_theme_font_size_override("font_size", 27)
+	arsenal_layout.add_child(arsenal_title)
+	var arsenal_grid := GridContainer.new()
+	arsenal_grid.columns = 4
+	arsenal_grid.add_theme_constant_override("h_separation", 7)
+	arsenal_grid.add_theme_constant_override("v_separation", 7)
+	arsenal_layout.add_child(arsenal_grid)
+	for i in range(WEAPONS.size()):
+		var tile := Button.new()
+		tile.custom_minimum_size = Vector2(181, 95)
+		tile.add_theme_font_size_override("font_size", 19)
+		tile.pressed.connect(_weapon_selected.bind(i))
+		arsenal_grid.add_child(tile)
+		controls["weapon_tile_%d" % i] = tile
+	var arsenal_close := Button.new()
+	arsenal_close.text = "← ZURÜCK"
+	arsenal_close.custom_minimum_size.y = 46
+	arsenal_close.pressed.connect(func(): arsenal.hide())
+	arsenal_layout.add_child(arsenal_close)
 	var angle := HSlider.new()
 	angle.min_value = 5
 	angle.max_value = 85
@@ -718,7 +747,7 @@ func _refresh_ui() -> void:
 	p["angle"] = clampf(float(p["angle"]), 5.0, 85.0)
 	controls["angle"].set_value_no_signal(p["angle"])
 	controls["power"].set_value_no_signal(p["power"])
-	controls["weapon"].select(p["weapon"])
+	controls["weapon"].text = "WAFFEN: %s (%s)" % [WEAPONS[int(p["weapon"])], "∞" if int(p["weapon"]) == 0 else str(p["ammo"][int(p["weapon"])])]
 	labels["angle"].text = "Winkel %.1f°" % float(p["angle"])
 	labels["power"].text = "Kraft %.1f%%" % float(p["power"])
 	var enabled := not p["cpu"] and phase == "aim" and not game_over
@@ -733,8 +762,7 @@ func _refresh_ui() -> void:
 	controls["rules"].text = "REGELN $%d" % starting_cash
 	controls["landscape"].text = _world_name(landscape_index)
 	labels["scoreboard"].text = "TURNIER (bis %d Siege): %s" % [tournament_target, str(match_wins.slice(0, player_count))]
-	for i in range(WEAPONS.size()):
-		controls["weapon"].set_item_text(i, "%s (%d)" % [WEAPONS[i], p["ammo"][i]])
+	_update_weapon_arsenal()
 
 func _toggle_touch_aim() -> void:
 	touch_aim_enabled = not touch_aim_enabled
@@ -777,8 +805,32 @@ func _cycle_rules() -> void:
 	wind_strength = presets[index].z
 	_new_game()
 
+func _open_weapon_arsenal() -> void:
+	if players.is_empty() or players[current]["cpu"] or phase != "aim" or game_over:
+		return
+	_update_weapon_arsenal()
+	controls["arsenal"].popup_centered()
+
+func _update_weapon_arsenal() -> void:
+	if players.is_empty():
+		return
+	var p: Dictionary = players[current]
+	var symbols := ["💣", "💥", "🎇", "🔥", "☢", "🚀", "🌀", "⛰", "☠", "🏀", "🌋", "⚡", "🚀", "✨", "⛏", "💣"]
+	for i in range(WEAPONS.size()):
+		var tile: Button = controls["weapon_tile_%d" % i]
+		var amount: int = int(p["ammo"][i])
+		var available := i == 0 or amount > 0
+		tile.text = "%s %s\n%s" % [symbols[i], WEAPONS[i], "∞" if i == 0 else str(amount)]
+		tile.disabled = not available or p["cpu"] or phase != "aim" or game_over
+		tile.modulate = Color(1.0, 0.87, 0.38) if int(p["weapon"]) == i else (Color.WHITE if available else Color(0.46, 0.46, 0.5, 0.65))
+
 func _weapon_selected(idx: int) -> void:
+	if players.is_empty() or players[current]["cpu"] or phase != "aim" or game_over:
+		return
+	if idx != 0 and int(players[current]["ammo"][idx]) <= 0:
+		return
 	players[current]["weapon"] = idx
+	controls["arsenal"].hide()
 	_refresh_ui()
 
 func _nudge_aim(setting: String, change: float) -> void:
@@ -895,7 +947,7 @@ func _fire() -> void:
 		return
 	var p: Dictionary = players[current]
 	var weapon: int = p["weapon"]
-	if p["ammo"][weapon] <= 0:
+	if weapon != 0 and p["ammo"][weapon] <= 0:
 		status = "Keine Munition!"
 		_refresh_ui()
 		return
