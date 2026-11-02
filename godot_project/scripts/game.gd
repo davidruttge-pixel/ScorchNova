@@ -421,7 +421,24 @@ func _build_ui() -> void:
 	var shop_scroll := ScrollContainer.new()
 	shop_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	shop_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	shop_scroll.follow_focus = true
 	shop_layout.add_child(shop_scroll)
+	controls["shop_scroll"] = shop_scroll
+	var shop_navigation := HBoxContainer.new()
+	shop_navigation.add_theme_constant_override("separation", 12)
+	shop_layout.add_child(shop_navigation)
+	var shop_up := Button.new()
+	shop_up.text = "▲  NACH OBEN"
+	shop_up.custom_minimum_size = Vector2(290, 62)
+	shop_up.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	shop_up.pressed.connect(_scroll_shop.bind(-260))
+	shop_navigation.add_child(shop_up)
+	var shop_down := Button.new()
+	shop_down.text = "▼  NACH UNTEN"
+	shop_down.custom_minimum_size = Vector2(290, 62)
+	shop_down.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	shop_down.pressed.connect(_scroll_shop.bind(260))
+	shop_navigation.add_child(shop_down)
 	var shop_items := VBoxContainer.new()
 	shop_items.custom_minimum_size.x = 595
 	shop_items.add_theme_constant_override("separation", 8)
@@ -848,6 +865,11 @@ func _power_changed(value: float) -> void:
 	players[current]["power"] = value
 	_refresh_ui()
 	queue_redraw()
+
+func _scroll_shop(distance: int) -> void:
+	var scroll: ScrollContainer = controls["shop_scroll"]
+	var bar := scroll.get_v_scroll_bar()
+	scroll.scroll_vertical = clampi(scroll.scroll_vertical + distance, 0, int(bar.max_value - bar.page))
 
 func _shop_pressed() -> void:
 	if players.is_empty():
