@@ -1203,10 +1203,14 @@ func _ai_fire() -> void:
 func _draw_theme_background() -> void:
 	# Five distinct world themes; background shapes never modify collision physics.
 	var theme: int = landscape_index
-	var sky_top: Color = Color("123d4a")
-	var sky_bottom: Color = Color("8bd0a2")
-	var mountains: Array = [Color("4d8370"), Color("32645d"), Color("234e52")]
+	var sky_top: Color = Color("251050")
+	var sky_bottom: Color = Color("ff8a9c")
+	var mountains: Array = [Color("a56bc6"), Color("7258b0"), Color("48447f")]
 	match theme:
+		4:
+			sky_top = Color("123d4a")
+			sky_bottom = Color("8bd0a2")
+			mountains = [Color("4d8370"), Color("32645d"), Color("234e52")]
 		5:
 			sky_top = Color("5476ac")
 			sky_bottom = Color("f8ce9c")
@@ -1223,7 +1227,13 @@ func _draw_theme_background() -> void:
 		var ratio: float = float(band) / 21.0
 		draw_rect(Rect2(0, float(band) * 25.0, W, 26), sky_top.lerp(sky_bottom, ratio))
 	# Sun, moon, swamp bubbles and volcanic embers.
-	if theme == 7:
+	if theme == 0:
+		draw_circle(Vector2(1020, 140), 74, Color("df9de6"))
+		draw_circle(Vector2(125, 115), 52, Color("9b60cf"))
+		for i in range(30):
+			var star := Vector2(float((i * 191 + 43) % 1280), float((i * 79 + 19) % 290))
+			draw_circle(star, 2, Color("fff3fa", 0.8))
+	elif theme == 7:
 		draw_circle(Vector2(1030, 125), 56, Color("ff8a4b"))
 		for i in range(28):
 			var e := Vector2(float((i * 193 + 47) % 1280), float((i * 67 + 33) % 400))
@@ -1276,10 +1286,8 @@ func _draw_theme_background() -> void:
 			draw_line(Vector2(cx, 360), Vector2(cx + 28, 450), Color("ed5036"), 7)
 
 func _draw() -> void:
-	if landscape_index != 0:
-		_draw_theme_background()
-	else:
-		terrain.draw_terrain(self)
+	_draw_theme_background()
+	terrain.draw_terrain(self)
 	if touch_target_timer > 0.0:
 		var alpha: float = minf(1.0, touch_target_timer)
 		draw_arc(touch_target, 19.0, 0.0, TAU, 36, Color(0.3, 1.0, 0.85, alpha), 3.0)
