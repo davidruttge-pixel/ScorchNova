@@ -88,7 +88,7 @@ func draw_terrain(canvas: CanvasItem) -> void:
 	# Cartoon terrain uses the existing mutable heightmap. All physics remains untouched.
 	var outline := PackedVector2Array()
 	outline.append(Vector2(0, FLOOR))
-	for x in range(0, width + 1, 8):
+	for x in range(0, width + 1, 20):
 		outline.append(Vector2(x, height_at(x)))
 	outline.append(Vector2(width, FLOOR))
 	var earth: Color = [Color("3c2445"), Color("28463b"), Color("7b543d"), Color("504536"), Color("3b5540"), Color("76563f"), Color("326c6e"), Color("422b35")][clampi(world_style, 0, 7)]
@@ -99,7 +99,7 @@ func draw_terrain(canvas: CanvasItem) -> void:
 	for band in range(3):
 		var offset: float = 20.0 + float(band) * 43.0
 		var band_poly := PackedVector2Array()
-		for x in range(0, width + 1, 8):
+		for x in range(0, width + 1, 20):
 			band_poly.append(Vector2(x, minf(float(FLOOR), height_at(x) + offset)))
 		band_poly.append(Vector2(width, FLOOR))
 		band_poly.append(Vector2(0, FLOOR))
@@ -117,9 +117,9 @@ func draw_terrain(canvas: CanvasItem) -> void:
 		canvas.draw_colored_polygon(band_poly, shade)
 
 	# Fine contour highlights and shaded grass lip.
-	for x in range(0, width, 8):
+	for x in range(0, width, 20):
 		var p := Vector2(x, height_at(x))
-		var q := Vector2(x + 8, height_at(x + 8))
+		var q := Vector2(x + 20, height_at(x + 20))
 		canvas.draw_line(p + Vector2(0, 9), q + Vector2(0, 9), Color("34243d"), 13.0, true)
 		canvas.draw_line(p + Vector2(0, 5), q + Vector2(0, 5), Color("356b2a"), 11.0, true)
 		canvas.draw_line(p, q, ([Color("85dd2c"), Color("69ba53"), Color("d8bf76"), Color("e9f6fa"), Color("7ad76d"), Color("e3c46d"), Color("77d6a5"), Color("5e4b48")][clampi(world_style, 0, 7)]), 9.0, true)
