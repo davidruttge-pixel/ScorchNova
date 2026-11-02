@@ -418,6 +418,17 @@ func _build_ui() -> void:
 	shop_money.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	shop_layout.add_child(shop_money)
 	labels["shop_money"] = shop_money
+	var shop_tabs := HBoxContainer.new()
+	shop_tabs.add_theme_constant_override("separation", 7)
+	shop_layout.add_child(shop_tabs)
+	for category_name in ["WAFFEN", "SCHUTZ", "EXTRAS"]:
+		var tab := Button.new()
+		tab.text = category_name
+		tab.custom_minimum_size = Vector2(195, 57)
+		tab.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		tab.pressed.connect(_select_shop_category.bind(category_name))
+		shop_tabs.add_child(tab)
+		controls["shop_tab_" + category_name] = tab
 	var shop_scroll := ScrollContainer.new()
 	shop_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	shop_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
@@ -447,16 +458,19 @@ func _build_ui() -> void:
 	category.text = "WAFFEN & MUNITION"
 	category.add_theme_font_size_override("font_size", 24)
 	shop_items.add_child(category)
+	controls["shop_section_WAFFEN"] = category
 	for i in range(1, WEAPONS.size()):
 		var buy_button := Button.new()
 		buy_button.text = "%s  —  $%d" % [WEAPONS[i], PRICES[i]]
 		buy_button.custom_minimum_size.y = 55
 		buy_button.pressed.connect(_shop_buy.bind("buy_%d" % i))
 		shop_items.add_child(buy_button)
+		controls["shop_weapon_%d" % i] = buy_button
 	var protection_title := Label.new()
 	protection_title.text = "SCHUTZ & VERBESSERUNGEN"
 	protection_title.add_theme_font_size_override("font_size", 24)
 	shop_items.add_child(protection_title)
+	controls["shop_section_SCHUTZ"] = protection_title
 	var protection_items := [
 		["Schild +40", 100, "shield"],
 		["Fallschirm +1", 75, "parachute"],
@@ -470,16 +484,20 @@ func _build_ui() -> void:
 		buy_button.custom_minimum_size.y = 55
 		buy_button.pressed.connect(_shop_buy.bind(item[2]))
 		shop_items.add_child(buy_button)
+		controls["shop_protection_" + str(item[2])] = buy_button
 	var movement_title := Label.new()
 	movement_title.text = "BEWEGUNG"
 	movement_title.add_theme_font_size_override("font_size", 24)
 	shop_items.add_child(movement_title)
+	controls["shop_section_EXTRAS"] = movement_title
 	for item in [["Teleport (1x)", 170, "teleport"], ["5 Zebralängen laufen", 90, "walk"]]:
 		var buy_button := Button.new()
 		buy_button.text = "%s  —  $%d" % [item[0], item[1]]
 		buy_button.custom_minimum_size.y = 55
 		buy_button.pressed.connect(_shop_buy.bind(item[2]))
 		shop_items.add_child(buy_button)
+		controls["shop_extra_" + str(item[2])] = buy_button
+	_select_shop_category("WAFFEN")
 	var shop_back := Button.new()
 	shop_back.text = "← ZURÜCK ZUM SPIEL"
 	shop_back.custom_minimum_size.y = 65
@@ -865,6 +883,20 @@ func _power_changed(value: float) -> void:
 	players[current]["power"] = value
 	_refresh_ui()
 	queue_redraw()
+
+func _select_shop_category(category_name: String) -> void:
+	for name in ["WAFFEN", "SCHUTZ", "EXTRAS"]:
+		var visible_section := name == category_name
+		controls["shop_section_" + name].visible = visible_section
+		var tab: Button = controls["shop_tab_" + name]
+		tab.modulate = Color(1.0, 0.88, 0.45) if visible_section else Color.WHITE
+	for i in range(1, WEAPONS.size()):
+		controls["shop_weapon_%d" % i].visible = category_name == "WAFFEN"
+	for key in ["shield", "parachute", "armor", "damage_upgrade", "engine"]:
+		controls["shop_protection_" + key].visible = category_name == "SCHUTZ"
+	for key in ["teleport", "walk"]:
+		controls["shop_extra_" + key].visible = category_name == "EXTRAS"
+	controls["shop_scroll"].scroll_vertical = 0
 
 func _scroll_shop(distance: int) -> void:
 	var scroll: ScrollContainer = controls["shop_scroll"]
