@@ -421,15 +421,10 @@ func _build_ui() -> void:
 	menu_button.pressed.connect(func(): extras_popup.hide())
 	restart.pressed.connect(func(): extras_popup.hide())
 	load_button.pressed.connect(func(): extras_popup.hide())
-	var angle_caption := Label.new()
-	angle_caption.text = "WINKEL"
-	angle_caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	row.add_child(angle_caption)
-	angle_caption.custom_minimum_size.x = 75
-	var power_caption := Label.new()
-	power_caption.text = "KRAFT"
-	power_caption.custom_minimum_size.x = 70
-	row.add_child(power_caption)
+	angle_minus.text = "W−"
+	angle_plus.text = "W+"
+	power_minus.text = "K−"
+	power_plus.text = "K+"
 	for i in range(1, WEAPONS.size()):
 		popup.add_button("%s  $%d" % [WEAPONS[i], PRICES[i]], false, "buy_%d" % i)
 	popup.add_button("Schild +40  $100", false, "shield")
