@@ -6,6 +6,7 @@ const FLOOR := 615
 var heights: PackedFloat32Array = PackedFloat32Array()
 var rng := RandomNumberGenerator.new()
 var world_style: int = 0
+var relief_strength: float = 1.0
 
 func generate_map(landscape: int = 0) -> void:
 	rng.randomize()
@@ -47,7 +48,9 @@ func generate_map(landscape: int = 0) -> void:
 				y += 112.0 * exp(-pow((fx - 650.0) / 58.0, 2.0))
 				y -= 55.0 * maxf(0.0, 1.0 - absf(fx - 260.0) / 80.0)
 				y -= 65.0 * maxf(0.0, 1.0 - absf(fx - 1030.0) / 95.0)
-		heights[x] = clampf(y, 290.0, 550.0)
+		# Stronger silhouette: valleys stay low while ridges rise visibly higher.
+		var relief: float = 1.35 if landscape != 4 else 1.18
+		heights[x] = clampf(460.0 + (y - 460.0) * relief, 245.0, 565.0)
 	# Make starting positions stable without erasing the worlds' tactical differences.
 	# The 10-player layout uses the same x coordinates as the match spawner.
 	for count in range(2, 11):
