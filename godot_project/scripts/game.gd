@@ -232,7 +232,7 @@ func _build_ui() -> void:
 	controls["weapon"] = weapon
 	var angle := HSlider.new()
 	angle.min_value = 5
-	angle.max_value = 175
+	angle.max_value = 85
 	angle.value = 48
 	angle.step = 0.5
 	angle.custom_minimum_size = Vector2(145, 94)
@@ -464,6 +464,7 @@ func _refresh_ui() -> void:
 	labels["wind"].text = "WIND %+.0f" % wind
 	labels["status"].text = status
 	var p: Dictionary = players[current]
+	p["angle"] = clampf(float(p["angle"]), 5.0, 85.0)
 	controls["angle"].set_value_no_signal(p["angle"])
 	controls["power"].set_value_no_signal(p["power"])
 	controls["weapon"].select(p["weapon"])
@@ -534,7 +535,7 @@ func _nudge_aim(setting: String, change: float) -> void:
 	slider.value = clampf(slider.value + change, slider.min_value, slider.max_value)
 
 func _angle_changed(value: float) -> void:
-	players[current]["angle"] = value
+	players[current]["angle"] = clampf(value, 5.0, 85.0)
 	_refresh_ui()
 	queue_redraw()
 
@@ -640,7 +641,7 @@ func _fire() -> void:
 	if weapon != 0:
 		p["ammo"][weapon] -= 1
 	var direction := shot_direction
-	var angle := deg_to_rad(float(p["angle"]))
+	var angle := deg_to_rad(clampf(float(p["angle"]), 5.0, 85.0))
 	var speed := float(p["power"]) * 6.3
 	projectile = _tank_pos(current) + Vector2(direction * 19, -17)
 	velocity = Vector2(cos(angle) * speed * direction, -sin(angle) * speed)
@@ -969,7 +970,7 @@ func _ai_fire() -> void:
 				best_angle = angle
 				best_power = power
 	var error: float = [8.0, 3.0, 0.8][ai_difficulty]
-	p["angle"] = clampf(best_angle + rng.randf_range(-error, error), 5, 175)
+	p["angle"] = clampf(best_angle + rng.randf_range(-error, error), 5, 85)
 	p["power"] = clampf(best_power + rng.randf_range(-error, error), 15, 100)
 	p["weapon"] = 0
 	if ai_difficulty >= 1 and p["ammo"][2] > 0 and best_error < 80.0:
@@ -1044,7 +1045,7 @@ func _draw_tank(i: int) -> void:
 		return
 	var pos: Vector2 = _tank_pos(i)
 	var accent: Color = p["color"]
-	var facing: float = 1.0 if i < players.size() / 2.0 else -1.0
+	var facing: float = shot_direction if i == current else (1.0 if i < players.size() / 2.0 else -1.0)
 	var ink := Color("171725")
 	var white := Color("fff9ee")
 	# Four legs and hooves. Only visuals change; original collision and aim stay intact.
@@ -1103,7 +1104,7 @@ func _draw_trajectory() -> void:
 	# High precision preview using the same acceleration and substep duration as live shots.
 	var p: Dictionary = players[current]
 	var direction: int = shot_direction
-	var a: float = deg_to_rad(float(p["angle"]))
+	var a: float = deg_to_rad(clampf(float(p["angle"]), 5.0, 85.0))
 	var v: Vector2 = Vector2(cos(a) * direction, -sin(a)) * float(p["power"]) * 6.3
 	var pos: Vector2 = _tank_pos(current) + Vector2(direction * 19, -17)
 	var start_x: float = pos.x
