@@ -886,7 +886,7 @@ func _power_changed(value: float) -> void:
 
 func _select_shop_category(category_name: String) -> void:
 	for name in ["WAFFEN", "SCHUTZ", "EXTRAS"]:
-		var visible_section := name == category_name
+		var visible_section: bool = name == category_name
 		controls["shop_section_" + name].visible = visible_section
 		var tab: Button = controls["shop_tab_" + name]
 		tab.modulate = Color(1.0, 0.88, 0.45) if visible_section else Color.WHITE
