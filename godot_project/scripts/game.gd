@@ -49,6 +49,8 @@ var visual_clock := 0.0
 var redraw_accumulator: float = 0.0
 var visual_muzzle := Vector2.ZERO
 var visual_muzzle_time := 0.0
+var visual_muzzle_weapon: int = 0
+var visual_muzzle_direction: Vector2 = Vector2.RIGHT
 var sparks: Array[Dictionary] = []
 var menu_open := true
 var income_per_turn := 35
@@ -1252,7 +1254,9 @@ func _fire() -> void:
 	projectile_age = 0.0
 	visual_trail.clear()
 	visual_muzzle = projectile
-	visual_muzzle_time = 0.18
+	visual_muzzle_weapon = weapon
+	visual_muzzle_direction = Vector2(cos(angle) * direction, -sin(angle))
+	visual_muzzle_time = 0.24
 	bounce_count = 0
 	shot_owner = current
 	projectile_active = true
@@ -1716,6 +1720,64 @@ func _draw_zebra_echo() -> void:
 		var point: Vector2 = zebra_echo[i]
 		draw_circle(point, 2.3, Color(0.35, 0.88, 1.0, 0.45))
 
+func _draw_weapon_muzzle() -> void:
+	# Sixteen weapon-specific, short-lived procedural flashes without particle nodes.
+	var progress: float = clampf(visual_muzzle_time / 0.24, 0.0, 1.0)
+	var origin: Vector2 = visual_muzzle
+	var forward: Vector2 = visual_muzzle_direction.normalized()
+	var sideways: Vector2 = Vector2(-forward.y, forward.x)
+	var weapon: int = visual_muzzle_weapon
+	var palette: Array[Color] = [
+		Color("ffb34a"), Color("ff702d"), Color("ffe75c"), Color("ff5730"),
+		Color("a5f7ff"), Color("f6b6ff"), Color("ffc477"), Color("bb9b75"),
+		Color("b4ff8e"), Color("86dfff"), Color("d4a7ff"), Color("56faff"),
+		Color("ff9be9"), Color("f4f3b5"), Color("e5c56a"), Color("9edc83")
+	]
+	var tint: Color = palette[weapon]
+	var alpha: float = progress * progress
+	var length: float = (23.0 + float((weapon * 7) % 24)) * (0.55 + progress * 0.65)
+	var width: float = 6.0 + float(weapon % 4) * 3.0
+	var tip: Vector2 = origin + forward * length
+	var left: Vector2 = origin + sideways * width
+	var right: Vector2 = origin - sideways * width
+	var flame: Color = Color(tint.r, tint.g, tint.b, alpha * 0.8)
+	var core: Color = Color(1.0, 0.97, 0.83, alpha)
+	match weapon:
+		4, 12: # Atom and super MIRV: expanding concentric shock rings.
+			for ring in range(3):
+				var radius: float = (11.0 + float(ring) * 13.0) * (1.6 - progress)
+				draw_arc(origin, radius, 0.0, TAU, 22, flame, 2.0 + float(ring), true)
+			draw_circle(origin, 12.0 * progress, core)
+		10: # Earthquake: groundward shock.
+			draw_arc(origin, 34.0 * (1.7 - progress), 0.0, PI, 20, flame, 4.0, true)
+			draw_line(origin - sideways * 22.0, origin + sideways * 22.0, core, 3.0)
+		11: # Laser: brilliant straight beam.
+			draw_line(origin, origin + forward * (length * 2.2), flame, 10.0 * progress, true)
+			draw_line(origin, origin + forward * (length * 2.2), core, 3.0 * progress, true)
+		5, 2, 13: # MIRV, cluster, shrapnel: multiple spark rays.
+			for i in range(7):
+				var spread: float = (float(i) - 3.0) * 0.20
+				var ray: Vector2 = forward.rotated(spread)
+				draw_line(origin, origin + ray * (length * (0.65 + float(i % 3) * 0.15)), flame, 2.5, true)
+			draw_circle(tip, 4.0 * progress, core)
+		7, 15: # Dirt weapons: chunky dust and brown puffs.
+			for i in range(6):
+				var offset: Vector2 = forward * float(9 + i * 5) + sideways * float((i % 3 - 1) * 11)
+				draw_circle(origin + offset, (4.0 + float(i % 3) * 2.0) * progress, flame)
+		3, 8: # Napalm / death head: broad hot fire.
+			draw_colored_polygon(PackedVector2Array([origin - sideways * width * 1.7, tip + sideways * width * 0.3, tip + forward * 13.0, origin + sideways * width * 1.7]), flame)
+			draw_circle(origin + forward * 12.0, 10.0 * progress, core)
+		9, 14: # Bouncer / drill: rotating spiked burst.
+			for i in range(6):
+				var ray: Vector2 = forward.rotated(float(i) * TAU / 6.0 + (1.0 - progress) * 1.3)
+				draw_line(origin, origin + ray * length * 0.75, flame, 3.0, true)
+		6: # Roller: low wide flash.
+			draw_colored_polygon(PackedVector2Array([left * 0.5 + origin * 0.5, tip, right * 0.5 + origin * 0.5]), flame)
+			draw_circle(tip, 5.0 * progress, core)
+		_: # Grenade, heavy shell: directional starburst.
+			draw_colored_polygon(PackedVector2Array([origin - sideways * width, origin + forward * length * 0.4 - sideways * width * 1.5, tip, origin + forward * length * 0.4 + sideways * width * 1.5, origin + sideways * width]), flame)
+			draw_circle(origin + forward * 8.0, 6.0 * progress, core)
+
 func _draw() -> void:
 	_draw_theme_background()
 	_draw_world_weather()
@@ -1736,9 +1798,7 @@ func _draw() -> void:
 		draw_circle(f["pos"], 4.0, Color("ffb34f"))
 	# Smooth fading trails and pulsating projectiles, without changing physics.
 	if visual_muzzle_time > 0.0:
-		var muzzle_alpha: float = visual_muzzle_time / 0.18
-		draw_circle(visual_muzzle, 22.0 * muzzle_alpha, Color(1.0, 0.82, 0.3, muzzle_alpha * 0.5))
-		draw_circle(visual_muzzle, 10.0 * muzzle_alpha, Color(1.0, 0.96, 0.75, muzzle_alpha))
+		_draw_weapon_muzzle()
 	if projectile_active:
 		for j in range(0, visual_trail.size(), 2):
 			var age: float = float(j + 1) / float(visual_trail.size() + 1)
