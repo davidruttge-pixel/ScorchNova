@@ -1174,6 +1174,9 @@ func _blast(pos: Vector2, radius: float, damage: int) -> void:
 		impact_positions.append(_tank_pos(tank_index))
 	terrain.carve(pos.x, pos.y, radius)
 	_apply_fall_damage()
+	# Volcanic ground erupts when a sufficiently powerful blast hits the central cone.
+	if landscape_index == 7 and radius >= 35.0 and absf(pos.x - W * 0.5) < 225.0:
+		_volcano_eruption(pos)
 	effects.append({"pos": pos, "radius": radius, "time": 0.5})
 	for n in range(18):
 		var a := rng.randf_range(0, TAU)
@@ -1190,6 +1193,27 @@ func _blast(pos: Vector2, radius: float, damage: int) -> void:
 			p["shield"] -= absorbed
 			p["hp"] = maxi(0, p["hp"] - (amount - absorbed))
 	_refresh_ui()
+
+func _volcano_eruption(impact: Vector2) -> void:
+	# A localized, predictable secondary hazard: visible lava burst near the impact.
+	var vent_x: float = clampf(impact.x, 80.0, W - 80.0)
+	var vent: Vector2 = Vector2(vent_x, terrain.height_at(vent_x))
+	effects.append({"pos": vent, "radius": 54.0, "time": 0.9})
+	for n in range(24):
+		var angle: float = rng.randf_range(-2.8, -0.35)
+		var speed: float = rng.randf_range(90.0, 250.0)
+		sparks.append({"pos": vent, "vel": Vector2(cos(angle), sin(angle)) * speed, "life": rng.randf_range(0.45, 1.0), "color": Color("ff592b")})
+	for i in range(players.size()):
+		var p: Dictionary = players[i]
+		if int(p["hp"]) <= 0:
+			continue
+		var distance: float = absf(float(p["x"]) - vent_x)
+		if distance < 78.0:
+			var damage: int = maxi(1, int(18.0 * (1.0 - distance / 78.0)))
+			var absorbed: int = mini(int(p["shield"]), damage)
+			p["shield"] = int(p["shield"]) - absorbed
+			p["hp"] = maxi(0, int(p["hp"]) - (damage - absorbed))
+	status = "VULKANAUSBRUCH! Treffer am Krater lösen Lava aus!"
 
 func _apply_fall_damage() -> void:
 	for i in range(players.size()):
