@@ -551,7 +551,7 @@ func _build_main_menu(root: Control) -> void:
 	play.pressed.connect(_start_from_menu)
 	column.add_child(play)
 	var resume := Button.new()
-	resume.text = "SPIEL FORTSETZEN"
+	resume.text = "← ZURÜCK ZUM SPIEL"
 	resume.custom_minimum_size.y = 65
 	resume.pressed.connect(_hide_menu)
 	column.add_child(resume)
