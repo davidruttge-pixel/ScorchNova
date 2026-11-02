@@ -524,12 +524,12 @@ func _build_main_menu(root: Control) -> void:
 	column.add_theme_constant_override("separation", 9)
 	center.add_child(column)
 	var heading := Label.new()
-	heading.text = "SCORCH NOVA"
+	heading.text = "SCORCHED ZEBRA"
 	heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	heading.add_theme_font_size_override("font_size", 43)
 	column.add_child(heading)
 	var subtitle := Label.new()
-	subtitle.text = "ZEBRA EDITION  •  ARTILLERIE  •  TAKTIK"
+	subtitle.text = "COMIC ARTILLERIE  •  ZEBRA DUELL"
 	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	column.add_child(subtitle)
 	var names_label := Label.new()
@@ -1142,33 +1142,71 @@ func _ai_fire() -> void:
 	_fire()
 
 func _draw() -> void:
-	draw_rect(Rect2(0, 0, W, H), Color("171348"))
-	# Native cartoon sky behind tanks, terrain and all interface controls.
-	for band in range(10):
-		var y: float = float(band) * 45.0
-		draw_rect(Rect2(0, y, W, 47.0), Color("39218a").lerp(Color("b64cd0"), float(band) / 14.0))
-	var planet_center := Vector2(975, 174)
-	for glow in range(4, 0, -1):
-		draw_circle(planet_center, 55.0 + float(glow) * 13.0, Color(0.68, 0.31, 0.96, 0.018))
-	draw_circle(planet_center, 62.0, Color("3925a1"))
-	draw_circle(planet_center + Vector2(-11, -11), 49.0, Color("8855d5"))
-	draw_arc(planet_center, 83.0, 0.0, TAU, 72, Color("e07dff"), 7.0)
-	# Rounded cloud clusters in the background only.
-	for cloud in range(5):
-		var cx: float = float(cloud * 197 + 42)
-		var cy: float = 150.0 + float(cloud % 3) * 45.0
+	# Scorched Zebra: layered sunset sky inspired by the approved comic concept.
+	draw_rect(Rect2(0, 0, W, H), Color("251050"))
+	for band in range(22):
+		var y: float = float(band) * 25.0
+		var t: float = float(band) / 21.0
+		var sky: Color = Color("23104e").lerp(Color("8d36bd"), minf(t * 1.6, 1.0))
+		if t > 0.52:
+			sky = Color("8d36bd").lerp(Color("ff8a9c"), (t - 0.52) / 0.48)
+		draw_rect(Rect2(0, y, W, 26.0), sky)
+	# Stars: small twinkles and four-pointed comic highlights.
+	for star in stars:
+		draw_circle(star, 1.6, Color("fff0ff", 0.82))
+	for i in range(17):
+		var sx: float = float((i * 257 + 73) % 1240 + 20)
+		var sy: float = float((i * 83 + 27) % 265 + 15)
+		var p := Vector2(sx, sy)
+		draw_line(p + Vector2(-6, 0), p + Vector2(6, 0), Color("ffe3ff", 0.85), 2.0, true)
+		draw_line(p + Vector2(0, -8), p + Vector2(0, 8), Color("ffe3ff", 0.85), 2.0, true)
+		draw_circle(p, 2.7, Color("ffffff"))
+	# Warm sunset and distant haze.
+	draw_circle(Vector2(685, 450), 82.0, Color("ffba67", 0.18))
+	draw_circle(Vector2(685, 450), 58.0, Color("ffe58c"))
+	draw_rect(Rect2(0, 474, W, 24), Color("ff9eac", 0.15))
+	# Ringed planet on the left.
+	var ringed := Vector2(126, 119)
+	draw_circle(ringed, 62.0, Color("291443"))
+	draw_circle(ringed, 58.0, Color("9351d4"))
+	draw_circle(ringed + Vector2(-15, -16), 39.0, Color("c779df"))
+	draw_arc(ringed, 77.0, 0.3, PI - 0.3, 60, Color("ffadca"), 10.0)
+	draw_arc(ringed, 77.0, PI + 0.3, TAU - 0.3, 60, Color("e778e6"), 7.0)
+	# Cratered lavender moon on the right.
+	var moon := Vector2(1104, 130)
+	draw_circle(moon, 91.0, Color("2a174e"))
+	draw_circle(moon, 86.0, Color("d9a0e6"))
+	draw_circle(moon + Vector2(-19, -24), 58.0, Color("efb8e9"))
+	for crater in [Vector3(-35, -23, 17), Vector3(29, 20, 23), Vector3(34, -38, 13), Vector3(-15, 42, 12)]:
+		draw_circle(moon + Vector2(crater.x, crater.y), crater.z, Color("9f68be", 0.7))
+		draw_arc(moon + Vector2(crater.x, crater.y), crater.z, 0, TAU, 28, Color("8254a9", 0.65), 2.0)
+	# Puffy clouds with dark cartoon undersides and pastel highlights.
+	for cloud in range(8):
+		var cx: float = float((cloud * 187 + 65) % 1370) - 45.0
+		var cy: float = 260.0 + float(cloud % 4) * 43.0
 		for puff in range(5):
-			draw_circle(Vector2(cx + float(puff - 2) * 19.0, cy), 25.0 + float(puff % 2) * 6.0, Color("d886f0"))
-
-	for s in stars:
-		draw_circle(s, 1.4, Color("c9d5f7", 0.7))
+			var center := Vector2(cx + float(puff - 2) * 23.0, cy - float(puff % 2) * 10.0)
+			draw_circle(center + Vector2(0, 7), 27.0, Color("70418e", 0.9))
+			draw_circle(center, 25.0, Color("ed9adf"))
+			draw_circle(center + Vector2(-7, -7), 13.0, Color("ffc2e6", 0.75))
+	# Three parallax mountain silhouettes, farthest first.
 	for layer in range(3):
 		var poly := PackedVector2Array([Vector2(0, 615)])
-		for x in range(0, 1281, 24):
-			var y := 310 + layer * 62 + sin(x * 0.007 + layer * 1.5) * 35 + sin(x * 0.019 + layer) * 19
-			poly.append(Vector2(x, y))
+		for x in range(0, 1281, 20):
+			var xf: float = float(x)
+			var ridge: float = 335.0 + float(layer) * 68.0
+			ridge += sin(xf * 0.008 + float(layer) * 1.8) * (45.0 + float(layer) * 8.0)
+			ridge += sin(xf * 0.019 + float(layer)) * 22.0
+			poly.append(Vector2(xf, ridge))
 		poly.append(Vector2(1280, 615))
-		draw_colored_polygon(poly, Color("24264e").lerp(Color("3b315c"), layer * 0.25))
+		var mountain_color := [Color("a56bc6"), Color("7258b0"), Color("48447f")][layer]
+		draw_colored_polygon(poly, mountain_color)
+		for x in range(0, 1280, 20):
+			var xf: float = float(x)
+			var yf: float = 335.0 + float(layer) * 68.0 + sin(xf * 0.008 + float(layer) * 1.8) * (45.0 + float(layer) * 8.0) + sin(xf * 0.019 + float(layer)) * 22.0
+			var nx: float = xf + 20.0
+			var ny: float = 335.0 + float(layer) * 68.0 + sin(nx * 0.008 + float(layer) * 1.8) * (45.0 + float(layer) * 8.0) + sin(nx * 0.019 + float(layer)) * 22.0
+			draw_line(Vector2(xf, yf), Vector2(nx, ny), Color("332452", 0.8), 2.0, true)
 	terrain.draw_terrain(self)
 	if touch_target_timer > 0.0:
 		var alpha: float = minf(1.0, touch_target_timer)
