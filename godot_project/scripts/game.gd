@@ -118,44 +118,6 @@ func _ready() -> void:
 	_new_game()
 	_show_menu()
 
-func _unhandled_input(event: InputEvent) -> void:
-	if not touch_aim_enabled or menu_open or game_over or phase != "aim" or players.is_empty() or players[current]["cpu"]:
-		return
-	if event is InputEventScreenTouch:
-		var touch: InputEventScreenTouch = event
-		if touch.pressed:
-			if touch.position.y > 570.0 or touch.position.y < 105.0:
-				return
-			var origin: Vector2 = _tank_pos(current)
-			if touch.position.distance_to(origin) < 125.0:
-				touch_aim_dragging = true
-				touch_aim_index = touch.index
-				touch_aim_origin = origin
-				get_viewport().set_input_as_handled()
-		elif touch_aim_dragging and touch.index == touch_aim_index:
-			_update_touch_aim(touch.position)
-			touch_aim_dragging = false
-			touch_aim_index = -1
-			get_viewport().set_input_as_handled()
-	elif event is InputEventScreenDrag:
-		var drag: InputEventScreenDrag = event
-		if touch_aim_dragging and drag.index == touch_aim_index:
-			_update_touch_aim(drag.position)
-			get_viewport().set_input_as_handled()
-
-func _update_touch_aim(target: Vector2) -> void:
-	var offset: Vector2 = target - touch_aim_origin
-	if offset.length() < 12.0:
-		return
-	shot_direction = 1.0 if offset.x >= 0.0 else -1.0
-	controls["direction"].text = "RICHTUNG: " + (">" if shot_direction > 0.0 else "<")
-	var angle: float = rad_to_deg(atan2(-offset.y, absf(offset.x)))
-	var power: float = clampf(offset.length() / 2.2, 15.0, 100.0)
-	players[current]["angle"] = snappedf(clampf(angle, 5.0, 175.0), 0.5)
-	players[current]["power"] = snappedf(power, 0.5)
-	_refresh_ui()
-	queue_redraw()
-
 func _setup_audio() -> void:
 	for sound_name in ["fire", "impact", "victory"]:
 		var player := AudioStreamPlayer.new()
