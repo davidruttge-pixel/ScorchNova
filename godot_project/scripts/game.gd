@@ -1,6 +1,9 @@
 extends Node2D
 
-const W := 1280.0
+var W: float = 1280.0
+var map_size_mode: int = -1
+var camera: Camera2D
+var camera_drag_start: Vector2 = Vector2.ZERO
 const H := 720.0
 const GRAVITY := 240.0
 const WEAPONS := ["Granate", "Schwer", "Cluster", "Napalm", "Atom", "MIRV", "Roller", "Dirt-Bombe", "Death Head", "Bouncer", "Erdbeben", "Laser", "Super-MIRV", "Splitterregen", "Bohrer", "Mega-Dirt"]
@@ -69,9 +72,9 @@ func _unhandled_input(event: InputEvent) -> void:
 	if not touch_aim_enabled or menu_open or game_over or phase != "aim" or players.is_empty() or players[current]["cpu"]:
 		return
 	if event is InputEventScreenTouch and event.pressed:
-		_touch_aim_at(event.position)
+		_touch_aim_at(_screen_to_world(event.position))
 	elif event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
-		_touch_aim_at(event.position)
+		_touch_aim_at(_screen_to_world(event.position))
 
 func _keyboard_control(event: InputEventKey) -> void:
 	if menu_open or shop_open or game_over or phase != "aim" or players.is_empty() or players[current]["cpu"]:
@@ -138,7 +141,49 @@ func _touch_aim_at(target: Vector2) -> void:
 	_refresh_ui()
 	queue_redraw()
 
+func _recommended_map_size() -> int:
+	if player_count <= 2:
+		return 0
+	if player_count <= 4:
+		return 1
+	if player_count <= 7:
+		return 2
+	return 3
+
+func _map_size_label() -> String:
+	if map_size_mode < 0:
+		return "AUTO (" + ["KLEIN", "MITTEL", "GROSS", "SEHR GROSS"][_recommended_map_size()] + ")"
+	return ["KLEIN", "MITTEL", "GROSS", "SEHR GROSS"][map_size_mode]
+
+func _cycle_map_size() -> void:
+	map_size_mode += 1
+	if map_size_mode > 3:
+		map_size_mode = -1
+	_update_map_size_button()
+
+func _update_map_size_button() -> void:
+	if controls.has("map_size_button"):
+		controls["map_size_button"].text = "KARTENGRÖSSE: " + _map_size_label()
+
+func _screen_to_world(point: Vector2) -> Vector2:
+	return point + camera.position - Vector2(640, 360)
+
+func _update_camera(delta: float) -> void:
+	if players.is_empty() or menu_open:
+		return
+	var focus_x: float = float(players[current]["x"])
+	if projectile_active:
+		focus_x = projectile.x
+	var goal_x: float = clampf(focus_x, 640.0, maxf(640.0, W - 640.0))
+	camera.position.x = lerpf(camera.position.x, goal_x, clampf(delta * 3.0, 0.0, 1.0))
+
 func _ready() -> void:
+	camera = Camera2D.new()
+	camera.position = Vector2(640, 360)
+	camera.position_smoothing_enabled = true
+	camera.position_smoothing_speed = 4.0
+	add_child(camera)
+	camera.make_current()
 	rng.randomize()
 	for i in range(55):
 		stars.append(Vector2(rng.randf_range(0, W), rng.randf_range(10, 370)))
@@ -221,7 +266,10 @@ func _draw_world_weather() -> void:
 			draw_line(Vector2(x, y), Vector2(x + 30.0, y), Color(0.78, 0.96, 1.0, 0.22), 2.0)
 
 func _new_game() -> void:
-	terrain.generate_map(landscape_index)
+	var selected_size: int = map_size_mode if map_size_mode >= 0 else _recommended_map_size()
+	W = float([1280, 1800, 2500, 3400][selected_size])
+	terrain.generate_map(landscape_index, int(W))
+	camera.position = Vector2(640, 360)
 	players.clear()
 	var colors := [Color("57baff"), Color("ff657d"), Color("f7c85b"), Color("a68bfa"), Color("71e2a3"), Color("ff9b64"), Color("46d6cb"), Color("ff8bd5"), Color("b7ef63"), Color("f0aaff")]
 	for i in range(player_count):
@@ -229,7 +277,7 @@ func _new_game() -> void:
 		var player_name: String = ("CPU " if is_cpu else "P") + str(i + 1)
 		if not is_cpu and i < custom_player_names.size() and not custom_player_names[i].is_empty():
 			player_name = custom_player_names[i]
-		players.append({"x": 105.0 + 1070.0 * float(i) / float(player_count - 1), "hp": 100, "shield": 0, "money": starting_cash, "armor": 0, "engine": 0, "damage_upgrade": 0, "angle": 48.0, "power": 72.0, "weapon": 0, "ammo": [999, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], "teleports": 0, "walks": 0, "parachutes": 1, "color": colors[i], "name": player_name, "cpu": is_cpu})
+		players.append({"x": 105.0 + (W - 210.0) * float(i) / float(player_count - 1), "hp": 100, "shield": 0, "money": starting_cash, "armor": 0, "engine": 0, "damage_upgrade": 0, "angle": 48.0, "power": 72.0, "weapon": 0, "ammo": [999, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], "teleports": 0, "walks": 0, "parachutes": 1, "color": colors[i], "name": player_name, "cpu": is_cpu})
 	current = 0
 	round_number = 1
 	game_over = false
@@ -723,6 +771,12 @@ func _build_main_menu(root: Control) -> void:
 		world_grid.add_child(world_button)
 		controls["world_button_%d" % world_ids[i]] = world_button
 	_update_menu_world_buttons()
+	var map_button := Button.new()
+	map_button.custom_minimum_size.y = 46
+	map_button.pressed.connect(_cycle_map_size)
+	column.add_child(map_button)
+	controls["map_size_button"] = map_button
+	_update_map_size_button()
 	var roster_title := Label.new()
 	roster_title.text = "MIT SPIELERN SPIELEN"
 	roster_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -804,6 +858,7 @@ func _change_menu_roster(delta: int, is_cpu: bool) -> void:
 				return
 		player_count -= 1
 	_update_roster_info()
+	_update_map_size_button()
 	_rebuild_name_inputs()
 
 func _show_menu() -> void:
@@ -1118,6 +1173,7 @@ func _fire() -> void:
 	_refresh_ui()
 
 func _physics_process(delta: float) -> void:
+	_update_camera(delta)
 	visual_clock += delta
 	touch_target_timer = maxf(0.0, touch_target_timer - delta)
 	visual_muzzle_time = maxf(0.0, visual_muzzle_time - delta)
@@ -1691,7 +1747,7 @@ func _save_game(automatic: bool = false) -> void:
 		_refresh_ui()
 		return
 	var data := {"version": 8, "players": _serialize_players(), "current": current,
-		"round": round_number, "wind": wind, "landscape": landscape_index,
+		"round": round_number, "wind": wind, "landscape": landscape_index, "map_size": map_size_mode,
 		"heights": Array(terrain.heights), "shot_count": shot_count,
 		"player_count": player_count, "cpu_count": cpu_count,
 		"difficulty": ai_difficulty, "starting_cash": starting_cash,
@@ -1734,7 +1790,7 @@ func _load_game() -> void:
 		_refresh_ui()
 		return
 	var data: Dictionary = parsed
-	if not data.has("heights") or not data.has("players") or not data["heights"] is Array or not data["players"] is Array or data["heights"].size() != TerrainModel.WIDTH + 1:
+	if not data.has("heights") or not data.has("players") or not data["heights"] is Array or not data["players"] is Array or data["heights"].size() < 1281:
 		status = "Spielstand unvollständig."
 		_hide_menu()
 		_refresh_ui()
@@ -1767,10 +1823,13 @@ func _load_game() -> void:
 			_hide_menu()
 			return
 	terrain.heights = PackedFloat32Array(data["heights"])
+	terrain.width = terrain.heights.size() - 1
+	W = float(terrain.width)
+	map_size_mode = clampi(int(data.get("map_size", -1)), -1, 3)
 	current = clampi(int(data["current"]), 0, players.size() - 1)
 	round_number = int(data["round"])
 	wind = float(data["wind"])
-	landscape_index = clampi(int(data["landscape"]), 0, 3)
+	landscape_index = clampi(int(data["landscape"]), 0, 7)
 	shot_count = int(data["shot_count"])
 	player_count = players.size()
 	cpu_count = clampi(int(data["cpu_count"]), 0, player_count - 1)
