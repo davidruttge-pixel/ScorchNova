@@ -453,7 +453,7 @@ func _build_ui() -> void:
 	row.add_child(load_button)
 	# Compact primary controls stay visible; secondary controls live in a separate extras window.
 	var extras_popup := PopupPanel.new()
-	extras_popup.title = "EXTRAS & EINSTELLUNGEN"
+	extras_popup.title = "EXTRAS"
 	extras_popup.size = Vector2i(420, 550)
 	root.add_child(extras_popup)
 	var extras_scroll := ScrollContainer.new()
@@ -474,11 +474,59 @@ func _build_ui() -> void:
 	extras_back.custom_minimum_size = Vector2(365, 64)
 	extras_back.pressed.connect(func(): extras_popup.hide())
 	extras_column.add_child(extras_back)
+	# Separate item actions and game settings from the extras window.
+	var items_popup := PopupPanel.new()
+	items_popup.title = "ITEMS BENUTZEN"
+	items_popup.size = Vector2i(430, 350)
+	root.add_child(items_popup)
+	var items_column := VBoxContainer.new()
+	items_column.custom_minimum_size = Vector2(400, 320)
+	items_column.add_theme_constant_override("separation", 10)
+	items_popup.add_child(items_column)
+	var items_button := Button.new()
+	items_button.text = "ITEMS"
+	items_button.custom_minimum_size = Vector2(120, 94)
+	items_button.pressed.connect(func(): items_popup.popup_centered())
+	row.add_child(items_button)
+	var items_back := Button.new()
+	items_back.text = "← ZURÜCK"
+	items_back.custom_minimum_size.y = 58
+	items_back.pressed.connect(func(): items_popup.hide())
+	items_column.add_child(items_back)
+	var shield_note := Label.new()
+	shield_note.text = "SCHILD: wirkt automatisch nach dem Kauf im SHOP"
+	shield_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	items_column.add_child(shield_note)
+	var settings_popup := PopupPanel.new()
+	settings_popup.title = "EINSTELLUNGEN"
+	settings_popup.size = Vector2i(430, 540)
+	root.add_child(settings_popup)
+	var settings_scroll := ScrollContainer.new()
+	settings_scroll.custom_minimum_size = Vector2(400, 510)
+	settings_popup.add_child(settings_scroll)
+	var settings_column := VBoxContainer.new()
+	settings_column.custom_minimum_size.x = 385
+	settings_column.add_theme_constant_override("separation", 9)
+	settings_scroll.add_child(settings_column)
+	var settings_button := Button.new()
+	settings_button.text = "EINSTELLUNGEN"
+	settings_button.custom_minimum_size = Vector2(365, 58)
+	settings_button.pressed.connect(func(): settings_popup.popup_centered())
+	extras_column.add_child(settings_button)
+	var settings_back := Button.new()
+	settings_back.text = "← ZURÜCK"
+	settings_back.custom_minimum_size.y = 58
+	settings_back.pressed.connect(func(): settings_popup.hide())
+	settings_column.add_child(settings_back)
+	for item_control in [teleport_button, walk_button, direction_button]:
+		item_control.reparent(items_column)
+		item_control.custom_minimum_size = Vector2(385, 60)
+	for setting_control in [touch_button, difficulty_button, count_button, cpu_button, rules_button, terrain_button, sound_button]:
+		setting_control.reparent(settings_column)
+		setting_control.custom_minimum_size = Vector2(365, 58)
 	var secondary_controls: Array[Control] = [
-		angle, angle_label, power, power_label, touch_button,
-		teleport_button, walk_button, direction_button, menu_button,
-		restart, difficulty_button, count_button, cpu_button, rules_button,
-		terrain_button, sound_button, save_button, load_button
+		angle, angle_label, power, power_label, menu_button,
+		restart, save_button, load_button
 	]
 	for control in secondary_controls:
 		control.reparent(extras_column)
