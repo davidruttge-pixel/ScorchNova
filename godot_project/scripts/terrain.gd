@@ -5,9 +5,11 @@ const WIDTH := 1280
 const FLOOR := 615
 var heights: PackedFloat32Array = PackedFloat32Array()
 var rng := RandomNumberGenerator.new()
+var world_style: int = 0
 
 func generate_map(landscape: int = 0) -> void:
 	rng.randomize()
+	world_style = landscape
 	heights.resize(WIDTH + 1)
 	var phase := rng.randf_range(0.0, 6.28)
 	for x in range(WIDTH + 1):
@@ -16,6 +18,10 @@ func generate_map(landscape: int = 0) -> void:
 			1: y = 465.0 + sin(x * 0.006 + phase) * 38.0 + sin(x * 0.025) * 12.0
 			2: y = 450.0 + absf(sin(x * 0.009 + phase)) * -125.0 + sin(x * 0.031) * 18.0
 			3: y = 455.0 + sin(x * 0.013 + phase) * 48.0 + sin(x * 0.045) * 15.0
+			4: y = 450.0 + sin(x * 0.012 + phase) * 42.0 + sin(x * 0.047) * 13.0
+			5: y = 460.0 + sin(x * 0.005 + phase) * 35.0 + sin(x * 0.027) * 9.0
+			6: y = 455.0 + sin(x * 0.010 + phase) * 50.0 + sin(x * 0.030) * 12.0
+			7: y = 440.0 + sin(x * 0.013 + phase) * 76.0 + sin(x * 0.039) * 23.0
 		heights[x] = clampf(y, 290.0, 540.0)
 
 func height_at(x: float) -> float:
@@ -45,7 +51,8 @@ func draw_terrain(canvas: CanvasItem) -> void:
 	for x in range(0, WIDTH + 1, 8):
 		outline.append(Vector2(x, height_at(x)))
 	outline.append(Vector2(WIDTH, FLOOR))
-	canvas.draw_colored_polygon(outline, Color("3c2445"))
+	var earth: Color = [Color("3c2445"), Color("28463b"), Color("7b543d"), Color("504536"), Color("3b5540"), Color("76563f"), Color("326c6e"), Color("422b35")][clampi(world_style, 0, 7)]
+	canvas.draw_colored_polygon(outline, earth)
 
 	# Broad colored soil strata follow the actual destructible surface.
 	# Polygon bands are clipped naturally by the same heightmap.
@@ -56,11 +63,17 @@ func draw_terrain(canvas: CanvasItem) -> void:
 			band_poly.append(Vector2(x, minf(float(FLOOR), height_at(x) + offset)))
 		band_poly.append(Vector2(WIDTH, FLOOR))
 		band_poly.append(Vector2(0, FLOOR))
-		var shade := Color("e88a40")
-		if band == 1:
-			shade = Color("c36a38")
-		elif band == 2:
-			shade = Color("8f4350")
+		var palette: Array = [
+			[Color("e88a40"), Color("c36a38"), Color("8f4350")],
+			[Color("6d9e57"), Color("477b5b"), Color("304f51")],
+			[Color("dfae5d"), Color("b98548"), Color("765c57")],
+			[Color("d5c1a1"), Color("b7a7a0"), Color("746d87")],
+			[Color("83b36b"), Color("518c68"), Color("315b53")],
+			[Color("f2d6a4"), Color("c79c65"), Color("86789c")],
+			[Color("c6ad75"), Color("8d875b"), Color("526e63")],
+			[Color("ac5947"), Color("753d40"), Color("3b303b")]
+		]
+		var shade: Color = palette[clampi(world_style, 0, 7)][band]
 		canvas.draw_colored_polygon(band_poly, shade)
 
 	# Fine contour highlights and shaded grass lip.
@@ -69,8 +82,8 @@ func draw_terrain(canvas: CanvasItem) -> void:
 		var q := Vector2(x + 8, height_at(x + 8))
 		canvas.draw_line(p + Vector2(0, 9), q + Vector2(0, 9), Color("34243d"), 13.0, true)
 		canvas.draw_line(p + Vector2(0, 5), q + Vector2(0, 5), Color("356b2a"), 11.0, true)
-		canvas.draw_line(p, q, Color("85dd2c"), 9.0, true)
-		canvas.draw_line(p + Vector2(0, -2), q + Vector2(0, -2), Color("d7ff65"), 3.0, true)
+		canvas.draw_line(p, q, ([Color("85dd2c"), Color("69ba53"), Color("d8bf76"), Color("e9f6fa"), Color("7ad76d"), Color("e3c46d"), Color("77d6a5"), Color("5e4b48")][clampi(world_style, 0, 7)]), 9.0, true)
+		canvas.draw_line(p + Vector2(0, -2), q + Vector2(0, -2), ([Color("d7ff65"), Color("b6ec81"), Color("fff0a5"), Color("ffffff"), Color("d2ff9a"), Color("fff0ad"), Color("b7f6db"), Color("f38b54")][clampi(world_style, 0, 7)]), 3.0, true)
 
 	# Deterministic pebbles and small soil texture marks; no random flicker.
 	for i in range(65):
