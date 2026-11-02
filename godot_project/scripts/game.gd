@@ -67,6 +67,15 @@ var custom_player_names: Array[String] = []
 var ui_root: Control
 
 func _unhandled_input(event: InputEvent) -> void:
+	if not menu_open and not shop_open and not game_over and phase == "aim" and not players.is_empty() and not players[current]["cpu"]:
+		if event is InputEventScreenTouch and event.pressed:
+			if _handle_floating_aim_touch(_screen_to_world(event.position)):
+				get_viewport().set_input_as_handled()
+				return
+		elif event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+			if _handle_floating_aim_touch(_screen_to_world(event.position)):
+				get_viewport().set_input_as_handled()
+				return
 	if event is InputEventKey and event.pressed and not event.echo:
 		_keyboard_control(event)
 		return
@@ -76,6 +85,46 @@ func _unhandled_input(event: InputEvent) -> void:
 		_touch_aim_at(_screen_to_world(event.position))
 	elif event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		_touch_aim_at(_screen_to_world(event.position))
+
+func _floating_aim_rect() -> Rect2:
+	var tank: Vector2 = _tank_pos(current)
+	var left: float = clampf(tank.x - 120.0, camera.position.x - 610.0, camera.position.x + 370.0)
+	var top: float = maxf(120.0, tank.y - 170.0)
+	return Rect2(left, top, 240.0, 104.0)
+
+func _handle_floating_aim_touch(point: Vector2) -> bool:
+	var rect: Rect2 = _floating_aim_rect()
+	if not rect.has_point(point):
+		return false
+	var local: Vector2 = point - rect.position
+	if local.y >= 38.0 and local.y < 73.0:
+		if local.x < 48.0:
+			_nudge_aim("angle", -1.0)
+		elif local.x > 192.0:
+			_nudge_aim("angle", 1.0)
+	elif local.y >= 73.0:
+		if local.x < 48.0:
+			_nudge_aim("power", -2.0)
+		elif local.x > 192.0:
+			_nudge_aim("power", 2.0)
+	return true
+
+func _draw_floating_aim() -> void:
+	var rect: Rect2 = _floating_aim_rect()
+	var font: Font = ThemeDB.fallback_font
+	var p: Dictionary = players[current]
+	draw_rect(rect, Color(0.035, 0.075, 0.16, 0.87), true)
+	draw_rect(rect, Color(0.48, 0.83, 1.0, 0.8), false, 2.0)
+	var x: float = rect.position.x
+	var y: float = rect.position.y
+	draw_string(font, Vector2(x + 13.0, y + 24.0), "ZIELWERTE", HORIZONTAL_ALIGNMENT_LEFT, -1, 17, Color(0.75, 0.94, 1.0))
+	draw_string(font, Vector2(x + 12.0, y + 62.0), "−", HORIZONTAL_ALIGNMENT_LEFT, -1, 23, Color.WHITE)
+	draw_string(font, Vector2(x + 57.0, y + 62.0), "Winkel %.1f°" % float(p["angle"]), HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color.WHITE)
+	draw_string(font, Vector2(x + 207.0, y + 62.0), "+", HORIZONTAL_ALIGNMENT_LEFT, -1, 23, Color.WHITE)
+	draw_string(font, Vector2(x + 12.0, y + 94.0), "−", HORIZONTAL_ALIGNMENT_LEFT, -1, 23, Color.WHITE)
+	draw_string(font, Vector2(x + 57.0, y + 94.0), "Kraft %.0f%%" % float(p["power"]), HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color.WHITE)
+	draw_string(font, Vector2(x + 207.0, y + 94.0), "+", HORIZONTAL_ALIGNMENT_LEFT, -1, 23, Color.WHITE)
+	draw_rect(Rect2(x + 58.0, y + 98.0, 126.0 * clampf(float(p["power"]) / 100.0, 0.0, 1.0), 3.0), Color(0.3, 0.85, 1.0))
 
 func _keyboard_control(event: InputEventKey) -> void:
 	if menu_open or shop_open or game_over or phase != "aim" or players.is_empty() or players[current]["cpu"]:
@@ -1661,6 +1710,7 @@ func _draw() -> void:
 	if phase == "aim" and not game_over and not players[current]["cpu"]:
 		_draw_zebra_echo()
 		_draw_trajectory()
+		_draw_floating_aim()
 	for f in falling:
 		draw_circle(f["pos"], 4.0, Color("ffb34f"))
 	# Smooth fading trails and pulsating projectiles, without changing physics.
