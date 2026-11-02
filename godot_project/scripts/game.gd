@@ -1255,6 +1255,22 @@ func _draw() -> void:
 			var nx: float = xf + 20.0
 			var ny: float = 335.0 + float(layer) * 68.0 + sin(nx * 0.008 + float(layer) * 1.8) * (45.0 + float(layer) * 8.0) + sin(nx * 0.019 + float(layer)) * 22.0
 			draw_line(Vector2(xf, yf), Vector2(nx, ny), Color("332452", 0.8), 2.0, true)
+	# Painted 2.5D facets: light-facing slopes, dark valley faces and ridge highlights.
+	for depth_layer in range(3):
+		var base_y: float = 335.0 + float(depth_layer) * 68.0
+		var amp: float = 45.0 + float(depth_layer) * 8.0
+		for segment in range(0, 1280, 40):
+			var left_x: float = float(segment)
+			var right_x: float = left_x + 40.0
+			var left_y: float = base_y + sin(left_x * 0.008 + float(depth_layer) * 1.8) * amp + sin(left_x * 0.019 + float(depth_layer)) * 22.0
+			var right_y: float = base_y + sin(right_x * 0.008 + float(depth_layer) * 1.8) * amp + sin(right_x * 0.019 + float(depth_layer)) * 22.0
+			var shadow: Color = Color("29254e", 0.22) if right_y < left_y else Color("f2b6f4", 0.16)
+			var facet := PackedVector2Array([Vector2(left_x, left_y), Vector2(right_x, right_y), Vector2(right_x + 16.0, right_y + 74.0), Vector2(left_x + 16.0, left_y + 74.0)])
+			draw_colored_polygon(facet, shadow)
+			draw_line(Vector2(left_x, left_y - 2.0), Vector2(right_x, right_y - 2.0), Color("f6d5ff", 0.26), 2.0, true)
+	# Thin drifting haze separates the mountain planes.
+	for haze in range(2):
+		draw_rect(Rect2(0, 440.0 + float(haze) * 55.0, W, 12.0), Color("f4b5f4", 0.07))
 	terrain.draw_terrain(self)
 	if touch_target_timer > 0.0:
 		var alpha: float = minf(1.0, touch_target_timer)
