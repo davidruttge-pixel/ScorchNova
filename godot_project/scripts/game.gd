@@ -1200,89 +1200,86 @@ func _ai_fire() -> void:
 		p["weapon"] = 1
 	_fire()
 
-func _draw() -> void:
-	# Scorched Zebra: layered sunset sky inspired by the approved comic concept.
-	draw_rect(Rect2(0, 0, W, H), Color("251050"))
+func _draw_theme_background() -> void:
+	# Five distinct world themes; background shapes never modify collision physics.
+	var theme: int = landscape_index
+	var sky_top: Color = Color("123d4a")
+	var sky_bottom: Color = Color("8bd0a2")
+	var mountains: Array = [Color("4d8370"), Color("32645d"), Color("234e52")]
+	match theme:
+		5:
+			sky_top = Color("5476ac")
+			sky_bottom = Color("f8ce9c")
+			mountains = [Color("c1ad9d"), Color("a7a4ad"), Color("7b809b")]
+		6:
+			sky_top = Color("197bba")
+			sky_bottom = Color("a5ecf2")
+			mountains = [Color("8ac6bb"), Color("579a91"), Color("3b7e80")]
+		7:
+			sky_top = Color("1c1728")
+			sky_bottom = Color("aa4140")
+			mountains = [Color("68505a"), Color("493640"), Color("302935")]
 	for band in range(22):
-		var y: float = float(band) * 25.0
-		var t: float = float(band) / 21.0
-		var sky: Color = Color("23104e").lerp(Color("8d36bd"), minf(t * 1.6, 1.0))
-		if t > 0.52:
-			sky = Color("8d36bd").lerp(Color("ff8a9c"), (t - 0.52) / 0.48)
-		draw_rect(Rect2(0, y, W, 26.0), sky)
-	# Stars: small twinkles and four-pointed comic highlights.
-	for star in stars:
-		draw_circle(star, 1.6, Color("fff0ff", 0.82))
-	for i in range(17):
-		var sx: float = float((i * 257 + 73) % 1240 + 20)
-		var sy: float = float((i * 83 + 27) % 265 + 15)
-		var p := Vector2(sx, sy)
-		draw_line(p + Vector2(-6, 0), p + Vector2(6, 0), Color("ffe3ff", 0.85), 2.0, true)
-		draw_line(p + Vector2(0, -8), p + Vector2(0, 8), Color("ffe3ff", 0.85), 2.0, true)
-		draw_circle(p, 2.7, Color("ffffff"))
-	# Warm sunset and distant haze.
-	draw_circle(Vector2(685, 450), 82.0, Color("ffba67", 0.18))
-	draw_circle(Vector2(685, 450), 58.0, Color("ffe58c"))
-	draw_rect(Rect2(0, 474, W, 24), Color("ff9eac", 0.15))
-	# Ringed planet on the left.
-	var ringed := Vector2(126, 119)
-	draw_circle(ringed, 62.0, Color("291443"))
-	draw_circle(ringed, 58.0, Color("9351d4"))
-	draw_circle(ringed + Vector2(-15, -16), 39.0, Color("c779df"))
-	draw_arc(ringed, 77.0, 0.3, PI - 0.3, 60, Color("ffadca"), 10.0)
-	draw_arc(ringed, 77.0, PI + 0.3, TAU - 0.3, 60, Color("e778e6"), 7.0)
-	# Cratered lavender moon on the right.
-	var moon := Vector2(1104, 130)
-	draw_circle(moon, 91.0, Color("2a174e"))
-	draw_circle(moon, 86.0, Color("d9a0e6"))
-	draw_circle(moon + Vector2(-19, -24), 58.0, Color("efb8e9"))
-	for crater in [Vector3(-35, -23, 17), Vector3(29, 20, 23), Vector3(34, -38, 13), Vector3(-15, 42, 12)]:
-		draw_circle(moon + Vector2(crater.x, crater.y), crater.z, Color("9f68be", 0.7))
-		draw_arc(moon + Vector2(crater.x, crater.y), crater.z, 0, TAU, 28, Color("8254a9", 0.65), 2.0)
-	# Puffy clouds with dark cartoon undersides and pastel highlights.
-	for cloud in range(8):
-		var cx: float = float((cloud * 187 + 65) % 1370) - 45.0
-		var cy: float = 260.0 + float(cloud % 4) * 43.0
-		for puff in range(5):
-			var center := Vector2(cx + float(puff - 2) * 23.0, cy - float(puff % 2) * 10.0)
-			draw_circle(center + Vector2(0, 7), 27.0, Color("70418e", 0.9))
-			draw_circle(center, 25.0, Color("ed9adf"))
-			draw_circle(center + Vector2(-7, -7), 13.0, Color("ffc2e6", 0.75))
-	# Three parallax mountain silhouettes, farthest first.
+		var ratio: float = float(band) / 21.0
+		draw_rect(Rect2(0, float(band) * 25.0, W, 26), sky_top.lerp(sky_bottom, ratio))
+	# Sun, moon, swamp bubbles and volcanic embers.
+	if theme == 7:
+		draw_circle(Vector2(1030, 125), 56, Color("ff8a4b"))
+		for i in range(28):
+			var e := Vector2(float((i * 193 + 47) % 1280), float((i * 67 + 33) % 400))
+			draw_circle(e, 2.0 + float(i % 3), Color("ff9c5b", 0.65))
+	elif theme == 4:
+		draw_circle(Vector2(1020, 135), 64, Color("e1ff9e"))
+		for i in range(14):
+			var b := Vector2(float((i * 137 + 30) % 1280), float((i * 83 + 25) % 340))
+			draw_arc(b, 6.0 + float(i % 3) * 4.0, 0, TAU, 24, Color("b8f7cd", 0.5), 2.0)
+	else:
+		draw_circle(Vector2(1000, 145), 65, Color("ffe4ad"))
+	# Layered peaks with faceted shading derived from each mountain's own hue.
 	for layer in range(3):
-		var poly := PackedVector2Array([Vector2(0, 615)])
+		var base: Color = mountains[layer]
+		var points := PackedVector2Array([Vector2(0, 615)])
 		for x in range(0, 1281, 20):
 			var xf: float = float(x)
-			var ridge: float = 335.0 + float(layer) * 68.0
-			ridge += sin(xf * 0.008 + float(layer) * 1.8) * (45.0 + float(layer) * 8.0)
-			ridge += sin(xf * 0.019 + float(layer)) * 22.0
-			poly.append(Vector2(xf, ridge))
-		poly.append(Vector2(1280, 615))
-		var mountain_color: Color = [Color("a56bc6"), Color("7258b0"), Color("48447f")][layer]
-		draw_colored_polygon(poly, mountain_color)
-		for x in range(0, 1280, 20):
-			var xf: float = float(x)
-			var yf: float = 335.0 + float(layer) * 68.0 + sin(xf * 0.008 + float(layer) * 1.8) * (45.0 + float(layer) * 8.0) + sin(xf * 0.019 + float(layer)) * 22.0
-			var nx: float = xf + 20.0
-			var ny: float = 335.0 + float(layer) * 68.0 + sin(nx * 0.008 + float(layer) * 1.8) * (45.0 + float(layer) * 8.0) + sin(nx * 0.019 + float(layer)) * 22.0
-			draw_line(Vector2(xf, yf), Vector2(nx, ny), Color("332452", 0.8), 2.0, true)
-	# Painted 2.5D facets: light-facing slopes, dark valley faces and ridge highlights.
-	for depth_layer in range(3):
-		var base_y: float = 335.0 + float(depth_layer) * 68.0
-		var amp: float = 45.0 + float(depth_layer) * 8.0
-		for segment in range(0, 1280, 40):
-			var left_x: float = float(segment)
-			var right_x: float = left_x + 40.0
-			var left_y: float = base_y + sin(left_x * 0.008 + float(depth_layer) * 1.8) * amp + sin(left_x * 0.019 + float(depth_layer)) * 22.0
-			var right_y: float = base_y + sin(right_x * 0.008 + float(depth_layer) * 1.8) * amp + sin(right_x * 0.019 + float(depth_layer)) * 22.0
-			var shadow: Color = Color("29254e", 0.22) if right_y < left_y else Color("f2b6f4", 0.16)
-			var facet := PackedVector2Array([Vector2(left_x, left_y), Vector2(right_x, right_y), Vector2(right_x + 16.0, right_y + 74.0), Vector2(left_x + 16.0, left_y + 74.0)])
-			draw_colored_polygon(facet, shadow)
-			draw_line(Vector2(left_x, left_y - 2.0), Vector2(right_x, right_y - 2.0), Color("f6d5ff", 0.26), 2.0, true)
-	# Thin drifting haze separates the mountain planes.
-	for haze in range(2):
-		draw_rect(Rect2(0, 440.0 + float(haze) * 55.0, W, 12.0), Color("f4b5f4", 0.07))
-	terrain.draw_terrain(self)
+			var yy: float = 340.0 + float(layer) * 73.0 + sin(xf * 0.008 + float(layer) * 1.8) * (50.0 + float(layer) * 9.0) + sin(xf * 0.021 + float(layer)) * 19.0
+			points.append(Vector2(xf, yy))
+		points.append(Vector2(1280, 615))
+		draw_colored_polygon(points, base)
+		for x in range(0, 1280, 40):
+			var lx: float = float(x)
+			var rx: float = lx + 40.0
+			var ly: float = 340.0 + float(layer) * 73.0 + sin(lx * 0.008 + float(layer) * 1.8) * (50.0 + float(layer) * 9.0) + sin(lx * 0.021 + float(layer)) * 19.0
+			var ry: float = 340.0 + float(layer) * 73.0 + sin(rx * 0.008 + float(layer) * 1.8) * (50.0 + float(layer) * 9.0) + sin(rx * 0.021 + float(layer)) * 19.0
+			var facet_color: Color = base.darkened(0.24) if ry < ly else base.lightened(0.18)
+			draw_colored_polygon(PackedVector2Array([Vector2(lx, ly), Vector2(rx, ry), Vector2(rx + 15, ry + 78), Vector2(lx + 15, ly + 78)]), facet_color)
+	# World-specific distant details.
+	if theme == 4:
+		for i in range(9):
+			var cx: float = float(i * 157 + 45)
+			draw_line(Vector2(cx, 505), Vector2(cx, 435), Color("28594b"), 7)
+			draw_circle(Vector2(cx, 425), 30, Color("427d58"))
+			draw_circle(Vector2(cx - 12, 412), 16, Color("72a66a"))
+	elif theme == 5:
+		for i in range(7):
+			var cx: float = float(i * 190 + 15)
+			draw_colored_polygon(PackedVector2Array([Vector2(cx - 43, 520), Vector2(cx, 440), Vector2(cx + 43, 520)]), Color("f4f8f5", 0.8))
+	elif theme == 6:
+		draw_rect(Rect2(0, 520, W, 95), Color("288eac", 0.75))
+		for i in range(17):
+			var x: float = float(i * 83)
+			draw_arc(Vector2(x, 535 + float(i % 3) * 15), 22, 0, PI, 16, Color("b7f5f1", 0.5), 2)
+	elif theme == 7:
+		for i in range(3):
+			var cx: float = float(i * 430 + 190)
+			draw_colored_polygon(PackedVector2Array([Vector2(cx - 110, 525), Vector2(cx, 335), Vector2(cx + 110, 525)]), Color("332b35"))
+			draw_line(Vector2(cx - 14, 358), Vector2(cx + 14, 358), Color("ff713c"), 10)
+			draw_line(Vector2(cx, 360), Vector2(cx + 28, 450), Color("ed5036"), 7)
+
+func _draw() -> void:
+	if landscape_index != 0:
+		_draw_theme_background()
+	else:
+		terrain.draw_terrain(self)
 	if touch_target_timer > 0.0:
 		var alpha: float = minf(1.0, touch_target_timer)
 		draw_arc(touch_target, 19.0, 0.0, TAU, 36, Color(0.3, 1.0, 0.85, alpha), 3.0)
@@ -1515,5 +1512,8 @@ func _load_game() -> void:
 	queue_redraw()
 
 func _cycle_landscape() -> void:
-	landscape_index = (landscape_index + 1) % 4
+	var worlds := [0, 4, 5, 6, 7]
+	var position := worlds.find(landscape_index)
+	landscape_index = worlds[(position + 1) % worlds.size()]
+	controls["landscape"].text = ["COMIC", "FROSCHWELT", "WÜSTE & SCHNEE", "INSELWELT", "VULKAN"][worlds.find(landscape_index)]
 	_new_game()
