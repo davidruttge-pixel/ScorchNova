@@ -176,6 +176,50 @@ func _toggle_sound() -> void:
 	sound_enabled = not sound_enabled
 	controls["sound"].text = "TON: AN" if sound_enabled else "TON: AUS"
 
+func _roll_world_wind() -> void:
+	# Each world has its own wind profile; wind remains fixed during a shot.
+	var multiplier: float = 1.0
+	match landscape_index:
+		4: # Swamp: sheltered, calmer air
+			multiplier = 0.55
+		5: # Desert: stronger, less predictable gusts between turns
+			multiplier = 1.45
+		6: # Islands: steady sea breeze
+			multiplier = 1.15
+		7: # Volcano: turbulent hot air
+			multiplier = 1.30
+	wind = rng.randf_range(-wind_strength * multiplier, wind_strength * multiplier)
+
+func _weather_name() -> String:
+	match landscape_index:
+		4:
+			return "NEBEL"
+		5:
+			return "SANDWIND"
+		6:
+			return "SEEBRISE"
+		7:
+			return "THERMIK"
+	return "WIND"
+
+func _draw_world_weather() -> void:
+	# Lightweight, deterministic weather particles; visual only.
+	if landscape_index == 4:
+		for i in range(15):
+			var x: float = fposmod(float(i * 113) + visual_clock * 12.0, W)
+			var y: float = 165.0 + float(i % 5) * 78.0
+			draw_line(Vector2(x, y), Vector2(x + 64.0, y), Color(0.75, 1.0, 0.86, 0.13), 11.0)
+	elif landscape_index == 5:
+		for i in range(42):
+			var x: float = fposmod(float(i * 97) + visual_clock * (45.0 + absf(wind)), W)
+			var y: float = 110.0 + float((i * 53) % 425)
+			draw_line(Vector2(x, y), Vector2(x + 18.0, y - 3.0), Color(1.0, 0.87, 0.61, 0.26), 1.5)
+	elif landscape_index == 6:
+		for i in range(19):
+			var x: float = fposmod(float(i * 79) + visual_clock * 30.0, W)
+			var y: float = 150.0 + float((i * 43) % 320)
+			draw_line(Vector2(x, y), Vector2(x + 30.0, y), Color(0.78, 0.96, 1.0, 0.22), 2.0)
+
 func _new_game() -> void:
 	terrain.generate_map(landscape_index)
 	players.clear()
@@ -198,7 +242,7 @@ func _new_game() -> void:
 	sparks.clear()
 	shop_open = false
 	phase = "aim"
-	wind = rng.randf_range(-wind_strength, wind_strength)
+	_roll_world_wind()
 	for p in players:
 		p["last_ground"] = terrain.height_at(p["x"])
 	shot_count = 0
@@ -780,7 +824,7 @@ func _refresh_ui() -> void:
 	labels["p1"].text = "%s  HP:%d  Schild:%d" % [players[current]["name"], players[current]["hp"], players[current]["shield"]]
 	labels["p2"].text = "Geld $%d  |  %d aktiv" % [players[current]["money"], living]
 	labels["round"].text = "RUNDE %d" % round_number
-	labels["wind"].text = "WIND %+.0f" % wind
+	labels["wind"].text = "%s %+.0f" % [_weather_name(), wind]
 	labels["status"].text = status
 	var p: Dictionary = players[current]
 	p["angle"] = clampf(float(p["angle"]), 5.0, 85.0)
@@ -1259,7 +1303,7 @@ func _end_shot() -> void:
 			break
 	if shot_count % player_count == 0:
 		round_number += 1
-	wind = rng.randf_range(-wind_strength, wind_strength)
+	_roll_world_wind()
 	if players[current]["cpu"]:
 		phase = "ai_wait"
 		ai_timer = 0.85
@@ -1475,6 +1519,7 @@ func _draw_zebra_echo() -> void:
 
 func _draw() -> void:
 	_draw_theme_background()
+	_draw_world_weather()
 	terrain.draw_terrain(self)
 	if touch_target_timer > 0.0:
 		var alpha: float = minf(1.0, touch_target_timer)
