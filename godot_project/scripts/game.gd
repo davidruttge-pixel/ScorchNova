@@ -61,12 +61,38 @@ var custom_player_names: Array[String] = []
 var ui_root: Control
 
 func _unhandled_input(event: InputEvent) -> void:
+	if event is InputEventKey and event.pressed and not event.echo:
+		_keyboard_control(event)
+		return
 	if not touch_aim_enabled or menu_open or game_over or phase != "aim" or players.is_empty() or players[current]["cpu"]:
 		return
 	if event is InputEventScreenTouch and event.pressed:
 		_touch_aim_at(event.position)
 	elif event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		_touch_aim_at(event.position)
+
+func _keyboard_control(event: InputEventKey) -> void:
+	if menu_open or shop_open or game_over or phase != "aim" or players.is_empty() or players[current]["cpu"]:
+		return
+	match event.keycode:
+		KEY_LEFT, KEY_A:
+			_nudge_aim("angle", -1.0)
+		KEY_RIGHT, KEY_D:
+			_nudge_aim("angle", 1.0)
+		KEY_UP, KEY_W:
+			_nudge_aim("power", 2.0)
+		KEY_DOWN, KEY_S:
+			_nudge_aim("power", -2.0)
+		KEY_SPACE:
+			_fire()
+		KEY_TAB:
+			var weapon: int = int(players[current]["weapon"])
+			for offset in range(1, WEAPONS.size() + 1):
+				var next_weapon: int = (weapon + offset) % WEAPONS.size()
+				if int(players[current]["ammo"][next_weapon]) > 0:
+					players[current]["weapon"] = next_weapon
+					_refresh_ui()
+					break
 
 func _touch_aim_at(target: Vector2) -> void:
 	# Touch anywhere on the battlefield; the HUD and menus retain their own input.
@@ -441,7 +467,7 @@ func _build_main_menu(root: Control) -> void:
 	resume.pressed.connect(_hide_menu)
 	column.add_child(resume)
 	var help := Label.new()
-	help.text = "Querformat empfohlen. Winkel und Kraft einstellen, Waffe wählen, FEUER drücken.\nSHOP kauft Munition und Schutz. MENÜ pausiert das Spiel."
+	help.text = "Querformat empfohlen. Maus: aufs Spielfeld klicken zum Zielen. Tastatur: ←/→ Winkel, ↑/↓ Kraft, Leertaste FEUER, Tab Waffe.\nSHOP kauft Munition und Schutz. MENÜ pausiert das Spiel."
 	help.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	help.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	column.add_child(help)
