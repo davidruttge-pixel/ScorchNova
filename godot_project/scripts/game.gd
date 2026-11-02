@@ -1199,7 +1199,7 @@ func _draw() -> void:
 			ridge += sin(xf * 0.019 + float(layer)) * 22.0
 			poly.append(Vector2(xf, ridge))
 		poly.append(Vector2(1280, 615))
-		var mountain_color := [Color("a56bc6"), Color("7258b0"), Color("48447f")][layer]
+		var mountain_color: Color = [Color("a56bc6"), Color("7258b0"), Color("48447f")][layer]
 		draw_colored_polygon(poly, mountain_color)
 		for x in range(0, 1280, 20):
 			var xf: float = float(x)
