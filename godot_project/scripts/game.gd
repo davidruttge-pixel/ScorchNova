@@ -57,6 +57,7 @@ var touch_aim_index := -1
 var touch_aim_origin := Vector2.ZERO
 var touch_target := Vector2.ZERO
 var touch_target_timer := 0.0
+var custom_player_names: Array[String] = []
 var ui_root: Control
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -142,7 +143,10 @@ func _new_game() -> void:
 	var colors := [Color("57baff"), Color("ff657d"), Color("f7c85b"), Color("a68bfa"), Color("71e2a3"), Color("ff9b64"), Color("46d6cb"), Color("ff8bd5"), Color("b7ef63"), Color("f0aaff")]
 	for i in range(player_count):
 		var is_cpu := i >= player_count - cpu_count
-		players.append({"x": 105.0 + 1070.0 * float(i) / float(player_count - 1), "hp": 100, "shield": 0, "money": starting_cash, "armor": 0, "engine": 0, "damage_upgrade": 0, "angle": 48.0, "power": 72.0, "weapon": 0, "ammo": [999, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], "teleports": 0, "walks": 0, "parachutes": 1, "color": colors[i], "name": ("CPU " if is_cpu else "P") + str(i + 1), "cpu": is_cpu})
+		var player_name: String = ("CPU " if is_cpu else "P") + str(i + 1)
+		if not is_cpu and i < custom_player_names.size() and not custom_player_names[i].is_empty():
+			player_name = custom_player_names[i]
+		players.append({"x": 105.0 + 1070.0 * float(i) / float(player_count - 1), "hp": 100, "shield": 0, "money": starting_cash, "armor": 0, "engine": 0, "damage_upgrade": 0, "angle": 48.0, "power": 72.0, "weapon": 0, "ammo": [999, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], "teleports": 0, "walks": 0, "parachutes": 1, "color": colors[i], "name": player_name, "cpu": is_cpu})
 	current = 0
 	round_number = 1
 	game_over = false
@@ -402,17 +406,30 @@ func _build_main_menu(root: Control) -> void:
 	overlay.add_child(center)
 	var column := VBoxContainer.new()
 	column.custom_minimum_size = Vector2(470, 0)
-	column.add_theme_constant_override("separation", 18)
+	column.add_theme_constant_override("separation", 9)
 	center.add_child(column)
 	var heading := Label.new()
 	heading.text = "SCORCH NOVA"
 	heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	heading.add_theme_font_size_override("font_size", 54)
+	heading.add_theme_font_size_override("font_size", 43)
 	column.add_child(heading)
 	var subtitle := Label.new()
 	subtitle.text = "ZEBRA EDITION  •  ARTILLERIE  •  TAKTIK"
 	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	column.add_child(subtitle)
+	var names_label := Label.new()
+	names_label.text = "SPIELERNAMEN (MENSCHEN)"
+	names_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	column.add_child(names_label)
+	var names_scroll := ScrollContainer.new()
+	names_scroll.custom_minimum_size = Vector2(470, 150)
+	names_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	column.add_child(names_scroll)
+	var names_column := VBoxContainer.new()
+	names_column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	names_scroll.add_child(names_column)
+	controls["names_column"] = names_column
+	_rebuild_name_inputs()
 	var play := Button.new()
 	play.text = "SPIEL STARTEN"
 	play.custom_minimum_size.y = 76
@@ -446,6 +463,26 @@ func _show_menu() -> void:
 func _hide_menu() -> void:
 	menu_open = false
 	controls["menu"].visible = false
+
+func _rebuild_name_inputs() -> void:
+	if not controls.has("names_column"):
+		return
+	var names_column: VBoxContainer = controls["names_column"]
+	for child in names_column.get_children():
+		child.queue_free()
+	for i in range(player_count - cpu_count):
+		var field := LineEdit.new()
+		field.placeholder_text = "Spieler %d" % (i + 1)
+		field.max_length = 20
+		field.custom_minimum_size.y = 48
+		field.text = custom_player_names[i] if i < custom_player_names.size() else ""
+		field.text_changed.connect(_player_name_changed.bind(i))
+		names_column.add_child(field)
+
+func _player_name_changed(value: String, index: int) -> void:
+	while custom_player_names.size() <= index:
+		custom_player_names.append("")
+	custom_player_names[index] = value.strip_edges()
 
 func _start_from_menu() -> void:
 	_new_game()
@@ -505,10 +542,12 @@ func _cycle_difficulty() -> void:
 func _cycle_player_count() -> void:
 	player_count = 2 if player_count >= 10 else player_count + 1
 	cpu_count = mini(cpu_count, player_count - 1)
+	_rebuild_name_inputs()
 	_new_game()
 
 func _cycle_cpu_count() -> void:
 	cpu_count = (cpu_count + 1) % player_count
+	_rebuild_name_inputs()
 	_new_game()
 
 func _cycle_rules() -> void:
