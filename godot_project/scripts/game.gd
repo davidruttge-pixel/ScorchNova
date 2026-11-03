@@ -52,6 +52,7 @@ var visual_muzzle := Vector2.ZERO
 var visual_muzzle_time := 0.0
 var projectile_previous: Vector2 = Vector2.ZERO
 var zebra_hit_timers: Dictionary = {}
+var zebra_damage_popups: Array[Dictionary] = []
 var visual_muzzle_weapon: int = 0
 var visual_muzzle_direction: Vector2 = Vector2.RIGHT
 var sparks: Array[Dictionary] = []
@@ -374,6 +375,7 @@ func _new_game() -> void:
 	camera.position = Vector2(640, 360)
 	players.clear()
 	zebra_hit_timers.clear()
+	zebra_damage_popups.clear()
 	var colors := [Color("57baff"), Color("ff657d"), Color("f7c85b"), Color("a68bfa"), Color("71e2a3"), Color("ff9b64"), Color("46d6cb"), Color("ff8bd5"), Color("b7ef63"), Color("f0aaff")]
 	for i in range(player_count):
 		var is_cpu := i >= player_count - cpu_count
@@ -1281,6 +1283,11 @@ func _fire() -> void:
 func _physics_process(delta: float) -> void:
 	_update_camera(delta)
 	visual_clock += delta
+	for popup in zebra_damage_popups:
+		popup["life"] = float(popup["life"]) - delta
+	for popup_index in range(zebra_damage_popups.size() - 1, -1, -1):
+		if float(zebra_damage_popups[popup_index]["life"]) <= 0.0:
+			zebra_damage_popups.remove_at(popup_index)
 	for zebra_index in zebra_hit_timers.keys():
 		zebra_hit_timers[zebra_index] = maxf(0.0, float(zebra_hit_timers[zebra_index]) - delta)
 		if float(zebra_hit_timers[zebra_index]) <= 0.0:
@@ -1362,9 +1369,20 @@ func _physics_process(delta: float) -> void:
 		redraw_accumulator = 0.0
 		queue_redraw()
 
+func _zebra_hit_distance(point: Vector2, index: int) -> float:
+	# Distance to the visible body and head; all characters share fair hit zones.
+	var base: Vector2 = _tank_pos(index)
+	var facing: float = shot_direction if index == current else (1.0 if index < players.size() / 2.0 else -1.0)
+	var body: Vector2 = base + Vector2(0.0, -35.0)
+	var head: Vector2 = base + Vector2(22.0 * facing, -73.0)
+	var body_distance: float = (point - body).length() - 25.0
+	var head_distance: float = (point - head).length() - 19.0
+	var legs_distance: float = (point - (base + Vector2(0.0, -12.0))).length() - 21.0
+	return minf(body_distance, minf(head_distance, legs_distance))
+
 func _hits_tank(pos: Vector2) -> bool:
 	for i in range(players.size()):
-		if players[i]["hp"] > 0 and pos.distance_to(_tank_pos(i)) < 14:
+		if int(players[i]["hp"]) > 0 and _zebra_hit_distance(pos, i) <= 0.0:
 			return true
 	return false
 
@@ -1450,7 +1468,7 @@ func _blast(pos: Vector2, radius: float, damage: int) -> void:
 		sparks.append({"pos": pos, "vel": Vector2(cos(a), sin(a)) * speed, "life": rng.randf_range(0.25, 0.75), "color": Color("ffcb68") if n % 3 else Color("ff685b")})
 	for i in range(players.size()):
 		var p: Dictionary = players[i]
-		var dist := pos.distance_to(impact_positions[i])
+		var dist: float = maxf(0.0, _zebra_hit_distance(pos, i))
 		if dist < radius + 24:
 			var amount := maxi(1, int(float(damage) * (1.0 - dist / (radius + 30))))
 			amount = maxi(1, int(float(amount) * (1.0 + 0.15 * float(players[shot_owner]["damage_upgrade"]))))
@@ -1459,6 +1477,8 @@ func _blast(pos: Vector2, radius: float, damage: int) -> void:
 			p["shield"] -= absorbed
 			p["hp"] = maxi(0, p["hp"] - (amount - absorbed))
 			zebra_hit_timers[i] = 0.36
+			var actual_damage: int = amount - absorbed
+			zebra_damage_popups.append({"pos": impact_positions[i] + Vector2(0, -112), "damage": actual_damage, "shield": absorbed, "life": 0.85})
 	_refresh_ui()
 
 func _volcano_eruption(impact: Vector2) -> void:
@@ -1494,6 +1514,7 @@ func _apply_fall_damage() -> void:
 			else:
 				p["hp"] = maxi(0, p["hp"] - int((drop - 18.0) * 0.5))
 				zebra_hit_timers[i] = 0.36
+				zebra_damage_popups.append({"pos": _tank_pos(i) + Vector2(0, -112), "damage": int((drop - 18.0) * 0.5), "shield": 0, "life": 0.85})
 		p["last_ground"] = ground
 
 func _end_shot() -> void:
@@ -1831,6 +1852,14 @@ func _draw() -> void:
 		draw_circle(visual_projectile, 12.0 * pulse, Color(1.0, 0.5, 0.12, 0.18))
 		draw_circle(visual_projectile, 5.5 * pulse, Color("ffde86"))
 		draw_arc(visual_projectile, 8.0 * pulse, 0.0, TAU, 18, Color("ff7a5b"), 2.0)
+	for popup in zebra_damage_popups:
+		var life: float = clampf(float(popup["life"]) / 0.85, 0.0, 1.0)
+		var label_text: String = "-%d" % int(popup["damage"]) if int(popup["damage"]) > 0 else "BLOCK"
+		var label_color: Color = Color(1.0, 0.45, 0.36, life) if int(popup["damage"]) > 0 else Color(0.35, 0.86, 1.0, life)
+		var label_pos: Vector2 = popup["pos"] + Vector2(0, (1.0 - life) * -24.0)
+		draw_string(ThemeDB.fallback_font, label_pos, label_text, HORIZONTAL_ALIGNMENT_CENTER, -1, 23, label_color)
+		if int(popup["shield"]) > 0:
+			draw_string(ThemeDB.fallback_font, label_pos + Vector2(0, -22), "Schild %d" % int(popup["shield"]), HORIZONTAL_ALIGNMENT_CENTER, -1, 14, Color(0.45, 0.9, 1.0, life))
 	for spark in sparks:
 		draw_circle(spark["pos"], 2.8, spark["color"] * Color(1, 1, 1, clampf(float(spark["life"]) * 2.0, 0, 1)))
 	for effect in effects:
@@ -1851,6 +1880,7 @@ func _draw_tank(i: int) -> void:
 	var facing: float = shot_direction if i == current else (1.0 if i < players.size() / 2.0 else -1.0)
 	var ink := Color("171725")
 	var white := Color("fff9ee")
+	var style: int = i % 10
 	# Four legs and hooves. Only visuals change; original collision and aim stay intact.
 	for leg_x in [-18.0, -8.0, 10.0, 20.0]:
 		var foot := pos + Vector2(leg_x, -2)
@@ -1875,6 +1905,18 @@ func _draw_tank(i: int) -> void:
 		var mane_y: float = -66.0 + float(spike) * 8.0
 		draw_line(pos + Vector2(8 * facing, mane_y), pos + Vector2(15 * facing, mane_y + 5), ink, 5.0, true)
 	var head := pos + Vector2(22 * facing, -73 + sin(idle * 0.7) * 1.5 + hit * 4.0)
+	# Ten silhouettes: distinct mane, headwear, ears and markings.
+	if style == 0 or style == 5:
+		draw_line(head + Vector2(-20 * facing, -24), head + Vector2(17 * facing, -27), accent, 6.0, true)
+	elif style == 1 or style == 6:
+		draw_arc(head + Vector2(0, -16), 19.0, PI, TAU, 16, accent, 5.0)
+	elif style == 2 or style == 7:
+		draw_rect(Rect2(head + Vector2(-17, -27), Vector2(34, 9)), accent)
+	elif style == 3 or style == 8:
+		for tuft in range(4):
+			draw_line(head + Vector2(-12 + tuft * 8, -18), head + Vector2(-9 + tuft * 8, -31 - float(tuft % 2) * 7), accent, 5.0)
+	else:
+		draw_circle(head + Vector2(-11 * facing, -23), 8.0, accent)
 	draw_circle(head + Vector2(-9 * facing, -16), 8.0, ink)
 	draw_circle(head + Vector2(8 * facing, -17), 8.0, ink)
 	draw_circle(head + Vector2(-9 * facing, -16), 5.0, Color("f5b6c6"))
@@ -1888,6 +1930,10 @@ func _draw_tank(i: int) -> void:
 	draw_circle(muzzle, 12.0, ink)
 	draw_circle(muzzle, 9.5, Color("bcb1bd"))
 	draw_circle(muzzle + Vector2(3 * facing, -2), 2.0, ink)
+	if style % 3 == 0:
+		draw_line(muzzle + Vector2(-4 * facing, 5), muzzle + Vector2(6 * facing, 5), ink, 2.0, true)
+	elif style % 3 == 1:
+		draw_circle(muzzle + Vector2(5 * facing, 4), 2.0, accent)
 	if hit > 0.05 or fmod(visual_clock + float(i) * 2.31, 5.4) < 0.12:
 		draw_line(head + Vector2(2 * facing, -4), head + Vector2(10 * facing, -4), ink, 3.0, true)
 	else:
@@ -1897,6 +1943,8 @@ func _draw_tank(i: int) -> void:
 	draw_line(head + Vector2(-15 * facing, -10), head + Vector2(10 * facing, -12), accent, 3.0, true)
 	draw_arc(head + Vector2(5 * facing, -10), 7.0, 0.0, TAU, 24, ink, 4.0)
 	draw_arc(head + Vector2(5 * facing, -10), 6.0, 0.0, TAU, 24, accent.lightened(0.35), 3.0)
+	# Player number stays visible at small mobile sizes.
+	draw_string(ThemeDB.fallback_font, pos + Vector2(-13, -66), str(i + 1), HORIZONTAL_ALIGNMENT_LEFT, -1, 16, accent)
 	# The invisible original cannon still determines the actual shot direction.
 	# A small sparkle indicates the aiming point without displaying a tank.
 	if p["shield"] > 0:
