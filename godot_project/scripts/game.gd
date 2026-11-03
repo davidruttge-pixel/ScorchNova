@@ -49,6 +49,7 @@ var visual_clock := 0.0
 var redraw_accumulator: float = 0.0
 var visual_muzzle := Vector2.ZERO
 var visual_muzzle_time := 0.0
+var projectile_previous: Vector2 = Vector2.ZERO
 var zebra_hit_timers: Dictionary = {}
 var visual_muzzle_weapon: int = 0
 var visual_muzzle_direction: Vector2 = Vector2.RIGHT
@@ -247,9 +248,17 @@ func _update_camera(delta: float) -> void:
 		return
 	var focus_x: float = float(players[current]["x"])
 	if projectile_active:
-		focus_x = projectile.x
+		# Keep the landscape still while the shell is inside a generous viewing corridor.
+		# Only pan when it approaches an edge, rather than pinning it to screen center.
+		var margin: float = 275.0
+		var camera_x: float = camera.position.x
+		if projectile.x > camera_x + margin:
+			focus_x = projectile.x - margin
+		elif projectile.x < camera_x - margin:
+			focus_x = projectile.x + margin
+		else:
+			focus_x = camera_x
 	var goal_x: float = clampf(focus_x, 640.0, maxf(640.0, W - 640.0))
-	# Camera2D already smooths its position; avoid a second lerp that causes laggy scrolling.
 	camera.position.x = goal_x
 
 func _ready() -> void:
@@ -1251,6 +1260,7 @@ func _fire() -> void:
 	var angle := deg_to_rad(clampf(float(p["angle"]), 5.0, 85.0))
 	var speed := float(p["power"]) * 6.3
 	projectile = _tank_pos(current) + Vector2(direction * 19, -17)
+	projectile_previous = projectile
 	velocity = Vector2(cos(angle) * speed * direction, -sin(angle) * speed)
 	projectile_weapon = weapon
 	projectile_age = 0.0
@@ -1290,6 +1300,7 @@ func _physics_process(delta: float) -> void:
 		if effects[i]["time"] <= 0:
 			effects.remove_at(i)
 	if projectile_active:
+		projectile_previous = projectile
 		visual_trail.append(projectile)
 		if visual_trail.size() > 22:
 			visual_trail.remove_at(0)
@@ -1813,9 +1824,10 @@ func _draw() -> void:
 			var point: Vector2 = visual_trail[j]
 			draw_circle(point, 1.5 + 4.0 * age, Color(1.0, 0.47 + 0.35 * age, 0.18, 0.5 * age))
 		var pulse: float = 1.0 + 0.12 * sin(visual_clock * 20.0)
-		draw_circle(projectile, 12.0 * pulse, Color(1.0, 0.5, 0.12, 0.18))
-		draw_circle(projectile, 5.5 * pulse, Color("ffde86"))
-		draw_arc(projectile, 8.0 * pulse, 0.0, TAU, 18, Color("ff7a5b"), 2.0)
+		var visual_projectile: Vector2 = projectile_previous.lerp(projectile, Engine.get_physics_interpolation_fraction())
+		draw_circle(visual_projectile, 12.0 * pulse, Color(1.0, 0.5, 0.12, 0.18))
+		draw_circle(visual_projectile, 5.5 * pulse, Color("ffde86"))
+		draw_arc(visual_projectile, 8.0 * pulse, 0.0, TAU, 18, Color("ff7a5b"), 2.0)
 	for spark in sparks:
 		draw_circle(spark["pos"], 2.8, spark["color"] * Color(1, 1, 1, clampf(float(spark["life"]) * 2.0, 0, 1)))
 	for effect in effects:
