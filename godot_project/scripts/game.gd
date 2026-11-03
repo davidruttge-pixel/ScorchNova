@@ -1943,6 +1943,41 @@ func _draw_tank(i: int) -> void:
 	draw_line(head + Vector2(-15 * facing, -10), head + Vector2(10 * facing, -12), accent, 3.0, true)
 	draw_arc(head + Vector2(5 * facing, -10), 7.0, 0.0, TAU, 24, ink, 4.0)
 	draw_arc(head + Vector2(5 * facing, -10), 6.0, 0.0, TAU, 24, accent.lightened(0.35), 3.0)
+	# Bold, foreground accessories: previously most headwear was hidden behind the head.
+	match style:
+		0: # Red bandana and trailing knot
+			draw_line(head + Vector2(-19 * facing, -11), head + Vector2(17 * facing, -14), accent, 8.0, true)
+			draw_line(head + Vector2(-19 * facing, -11), head + Vector2(-32 * facing, 0), accent, 6.0, true)
+		1: # Pilot helmet and oversized visor
+			draw_arc(head + Vector2(0, -7), 22.0, PI * 1.05, PI * 1.95, 20, accent, 9.0, true)
+			draw_rect(Rect2(head + Vector2(-15, -14), Vector2(30, 10)), Color("83d9f7"))
+		2: # Explorer hat with broad brim
+			draw_rect(Rect2(head + Vector2(-23, -27), Vector2(46, 8)), accent)
+			draw_rect(Rect2(head + Vector2(-13, -42), Vector2(26, 18)), accent.darkened(0.2))
+		3: # Punk crest
+			for crest in range(5):
+				draw_line(head + Vector2(-17 + crest * 8, -19), head + Vector2(-15 + crest * 8, -45 - (crest % 2) * 8), accent, 8.0, true)
+		4: # Wide cowboy hat
+			draw_line(head + Vector2(-31, -22), head + Vector2(31, -22), accent, 9.0, true)
+			draw_rect(Rect2(head + Vector2(-15, -40), Vector2(30, 17)), accent)
+		5: # Headphones
+			draw_arc(head + Vector2(0, -5), 24.0, PI * 1.05, PI * 1.95, 20, accent, 8.0, true)
+			draw_circle(head + Vector2(-21 * facing, -1), 9.0, accent)
+		6: # Tall top hat
+			draw_rect(Rect2(head + Vector2(-16, -48), Vector2(32, 30)), accent)
+			draw_line(head + Vector2(-24, -18), head + Vector2(24, -18), ink, 8.0, true)
+		7: # Sport cap with bill
+			draw_arc(head + Vector2(0, -9), 20.0, PI, TAU, 20, accent, 11.0, true)
+			draw_line(head + Vector2(0, -24), head + Vector2(31 * facing, -19), accent, 8.0, true)
+		8: # Crown
+			draw_colored_polygon(PackedVector2Array([head + Vector2(-20, -20), head + Vector2(-20, -43), head + Vector2(-8, -33), head + Vector2(0, -50), head + Vector2(10, -33), head + Vector2(21, -43), head + Vector2(20, -20)]), accent)
+		9: # Woolly winter hat
+			draw_circle(head + Vector2(0, -28), 19.0, accent)
+			draw_line(head + Vector2(-20, -19), head + Vector2(20, -19), ink, 7.0, true)
+			draw_circle(head + Vector2(0, -47), 7.0, accent.lightened(0.4))
+	# Large scarf makes team color readable even when the face is tiny.
+	draw_line(pos + Vector2(9 * facing, -50), pos + Vector2(25 * facing, -49), accent, 10.0, true)
+	draw_line(pos + Vector2(10 * facing, -49), pos + Vector2(-2 * facing, -62 + sin(idle) * 2.0), accent, 7.0, true)
 	# Player number stays visible at small mobile sizes.
 	draw_string(ThemeDB.fallback_font, pos + Vector2(-13, -66), str(i + 1), HORIZONTAL_ALIGNMENT_LEFT, -1, 16, accent)
 	# The invisible original cannon still determines the actual shot direction.
