@@ -49,6 +49,7 @@ var visual_clock := 0.0
 var redraw_accumulator: float = 0.0
 var visual_muzzle := Vector2.ZERO
 var visual_muzzle_time := 0.0
+var zebra_hit_timers: Dictionary = {}
 var visual_muzzle_weapon: int = 0
 var visual_muzzle_direction: Vector2 = Vector2.RIGHT
 var sparks: Array[Dictionary] = []
@@ -362,6 +363,7 @@ func _new_game() -> void:
 	terrain.generate_map(landscape_index, int(W))
 	camera.position = Vector2(640, 360)
 	players.clear()
+	zebra_hit_timers.clear()
 	var colors := [Color("57baff"), Color("ff657d"), Color("f7c85b"), Color("a68bfa"), Color("71e2a3"), Color("ff9b64"), Color("46d6cb"), Color("ff8bd5"), Color("b7ef63"), Color("f0aaff")]
 	for i in range(player_count):
 		var is_cpu := i >= player_count - cpu_count
@@ -1268,6 +1270,10 @@ func _fire() -> void:
 func _physics_process(delta: float) -> void:
 	_update_camera(delta)
 	visual_clock += delta
+	for zebra_index in zebra_hit_timers.keys():
+		zebra_hit_timers[zebra_index] = maxf(0.0, float(zebra_hit_timers[zebra_index]) - delta)
+		if float(zebra_hit_timers[zebra_index]) <= 0.0:
+			zebra_hit_timers.erase(zebra_index)
 	touch_target_timer = maxf(0.0, touch_target_timer - delta)
 	visual_muzzle_time = maxf(0.0, visual_muzzle_time - delta)
 	if menu_open:
@@ -1439,6 +1445,7 @@ func _blast(pos: Vector2, radius: float, damage: int) -> void:
 			var absorbed := mini(p["shield"], amount)
 			p["shield"] -= absorbed
 			p["hp"] = maxi(0, p["hp"] - (amount - absorbed))
+			zebra_hit_timers[i] = 0.36
 	_refresh_ui()
 
 func _volcano_eruption(impact: Vector2) -> void:
@@ -1473,6 +1480,7 @@ func _apply_fall_damage() -> void:
 				p["parachutes"] -= 1
 			else:
 				p["hp"] = maxi(0, p["hp"] - int((drop - 18.0) * 0.5))
+				zebra_hit_timers[i] = 0.36
 		p["last_ground"] = ground
 
 func _end_shot() -> void:
@@ -1819,6 +1827,11 @@ func _draw_tank(i: int) -> void:
 	if p["hp"] <= 0:
 		return
 	var pos: Vector2 = _tank_pos(i)
+	var hit: float = float(zebra_hit_timers.get(i, 0.0)) / 0.36
+	var idle: float = visual_clock * 2.2 + float(i) * 1.7
+	var bob: float = sin(idle) * 1.2
+	var flinch: float = sin((1.0 - hit) * PI * 3.0) * hit * 5.0
+	pos += Vector2(-flinch, bob - hit * 3.0)
 	var accent: Color = p["color"]
 	var facing: float = shot_direction if i == current else (1.0 if i < players.size() / 2.0 else -1.0)
 	var ink := Color("171725")
@@ -1831,8 +1844,8 @@ func _draw_tank(i: int) -> void:
 		draw_line(foot + Vector2(-4, -15), foot + Vector2(4, -11), ink, 3.0, true)
 		draw_rect(Rect2(foot + Vector2(-6, -4), Vector2(12, 6)), ink)
 	# Tail and rounded striped body.
-	draw_line(pos + Vector2(-25 * facing, -36), pos + Vector2(-36 * facing, -24), ink, 5.0, true)
-	draw_circle(pos + Vector2(-37 * facing, -23), 4.0, ink)
+	draw_line(pos + Vector2(-25 * facing, -36), pos + Vector2(-36 * facing, -24 + sin(idle * 2.0) * 4.0), ink, 5.0, true)
+	draw_circle(pos + Vector2(-37 * facing, -23 + sin(idle * 2.0) * 4.0), 4.0, ink)
 	draw_circle(pos + Vector2(0, -35), 27.0, ink)
 	draw_circle(pos + Vector2(0, -35), 24.0, white)
 	for stripe in range(5):
@@ -1846,7 +1859,7 @@ func _draw_tank(i: int) -> void:
 	for spike in range(5):
 		var mane_y: float = -66.0 + float(spike) * 8.0
 		draw_line(pos + Vector2(8 * facing, mane_y), pos + Vector2(15 * facing, mane_y + 5), ink, 5.0, true)
-	var head := pos + Vector2(22 * facing, -73)
+	var head := pos + Vector2(22 * facing, -73 + sin(idle * 0.7) * 1.5 + hit * 4.0)
 	draw_circle(head + Vector2(-9 * facing, -16), 8.0, ink)
 	draw_circle(head + Vector2(8 * facing, -17), 8.0, ink)
 	draw_circle(head + Vector2(-9 * facing, -16), 5.0, Color("f5b6c6"))
@@ -1860,8 +1873,11 @@ func _draw_tank(i: int) -> void:
 	draw_circle(muzzle, 12.0, ink)
 	draw_circle(muzzle, 9.5, Color("bcb1bd"))
 	draw_circle(muzzle + Vector2(3 * facing, -2), 2.0, ink)
-	draw_circle(head + Vector2(6 * facing, -4), 4.0, ink)
-	draw_circle(head + Vector2(7 * facing, -5), 1.4, white)
+	if hit > 0.05 or fmod(visual_clock + float(i) * 2.31, 5.4) < 0.12:
+		draw_line(head + Vector2(2 * facing, -4), head + Vector2(10 * facing, -4), ink, 3.0, true)
+	else:
+		draw_circle(head + Vector2(6 * facing, -4), 4.0, ink)
+		draw_circle(head + Vector2(7 * facing, -5), 1.4, white)
 	# Goggles and accent-color strap distinguish the players.
 	draw_line(head + Vector2(-15 * facing, -10), head + Vector2(10 * facing, -12), accent, 3.0, true)
 	draw_arc(head + Vector2(5 * facing, -10), 7.0, 0.0, TAU, 24, ink, 4.0)
@@ -1870,7 +1886,9 @@ func _draw_tank(i: int) -> void:
 	# A small sparkle indicates the aiming point without displaying a tank.
 	if p["shield"] > 0:
 		draw_arc(pos + Vector2(0, -39), 52.0, PI, TAU, 40, Color("7cecff", 0.75), 3.0)
-	var bar := Rect2(pos + Vector2(-27, -111), Vector2(54, 7))
+	if hit > 0.05:
+		draw_arc(pos + Vector2(0, -40), 33.0 + (1.0 - hit) * 9.0, PI * 1.1, PI * 1.9, 20, Color(1.0, 0.94, 0.72, hit * 0.65), 2.0)
+	var bar := Rect2(_tank_pos(i) + Vector2(-27, -111), Vector2(54, 7))
 	draw_rect(bar.grow(2), ink)
 	draw_rect(bar, Color("68243f"))
 	draw_rect(Rect2(bar.position, Vector2(54.0 * float(p["hp"]) / 100.0, 7)), Color("66f43f"))
