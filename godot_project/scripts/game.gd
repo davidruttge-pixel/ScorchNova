@@ -44,6 +44,7 @@ var bounce_count := 0
 var projectile_age := 0.0
 var visual_trail: Array[Vector2] = []
 var zebra_echo: Array[Vector2] = []
+var shot_path: Array[Vector2] = []
 var echo_owner := -1
 var visual_clock := 0.0
 var redraw_accumulator: float = 0.0
@@ -1301,6 +1302,7 @@ func _physics_process(delta: float) -> void:
 			effects.remove_at(i)
 	if projectile_active:
 		projectile_previous = projectile
+		shot_path.append(projectile)
 		visual_trail.append(projectile)
 		if visual_trail.size() > 22:
 			visual_trail.remove_at(0)
@@ -1728,16 +1730,17 @@ func _draw_theme_background() -> void:
 			draw_line(Vector2(cx, 360), Vector2(cx + 28, 450), Color("ed5036"), 7)
 
 func _store_zebra_echo() -> void:
-	zebra_echo = visual_trail.duplicate()
+	zebra_echo = shot_path.duplicate()
 	zebra_echo.append(projectile)
 	echo_owner = shot_owner
 
 func _draw_zebra_echo() -> void:
 	if echo_owner != current or zebra_echo.size() < 2:
 		return
-	for i in range(0, zebra_echo.size(), 3):
-		var point: Vector2 = zebra_echo[i]
-		draw_circle(point, 2.3, Color(0.35, 0.88, 1.0, 0.45))
+	# Dashed turquoise echo of the last complete shot, behind the current aim.
+	for i in range(0, zebra_echo.size() - 1, 4):
+		var end_index: int = mini(i + 2, zebra_echo.size() - 1)
+		draw_line(zebra_echo[i], zebra_echo[end_index], Color(0.28, 0.94, 0.95, 0.55), 2.0, true)
 
 func _draw_weapon_muzzle() -> void:
 	# Sixteen weapon-specific, short-lived procedural flashes without particle nodes.
@@ -1923,8 +1926,10 @@ func _draw_trajectory() -> void:
 			break
 		points.append(pos)
 	var visible_count: int = maxi(1, int(ceil(float(points.size()) * 0.5)))
-	for i in range(0, visible_count, 18):
-		draw_circle(points[i], 2.5, Color("ffe081", 0.82))
+	# Golden dashed trajectory, showing exactly the first half of the predicted arc.
+	for i in range(0, visible_count - 1, 9):
+		var end_index: int = mini(i + 5, visible_count - 1)
+		draw_line(points[i], points[end_index], Color(1.0, 0.82, 0.24, 0.95), 3.0, true)
 
 
 # Version 0.8: Save only stable turn boundaries to avoid restoring half-resolved explosions.
